@@ -29,6 +29,10 @@ body {
   font-size: 1.2rem;
 }
 
+.BreedSelector form input.isLoading {
+  background-color: #555;
+}
+
 .CatImage {
   height: 300px;
   background-color: #fef;
