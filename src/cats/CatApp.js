@@ -5,64 +5,62 @@ const API_KEY = "1a2691b0-d86c-41c1-b968-3b264d96ff7";
 const API_VERSION = "1";
 const SERVER = "api.thecatapi.com";
 
+const NEXT = Symbol("next");
+const PREV = Symbol("prev");
+
 /*
 3) image slider with timer between each image
 countdown should reset for each image
   https://thecatapi.com/?
   api_key=1a2691b0-d86c-41c1-b968-3b264d96ff78'
 
+  - image preloading
+  - api buffering
   - breed selector (https://api.thecatapi.com/v1/breeds)
   - requests images with (https://api.thecatapi.com/images/search?
       breed_id={{selected_breed.id}})
-  - arrows to scroll
-  - image preloading
-  - api buffering
   - handle server errors
-  - fetch breeds to hook
   - timer to change image
   - loading state
   - keyboard support
+  - useReducer, useContext, useCallback, useMemo
 */
 
-const fetchJSONFromCatsAPI = async (path, params = {}) => {
+const fetchFromCatsAPI = async (path, params = {}) => {
   const queryParams = new URLSearchParams(params);
   queryParams.append("api_key", API_KEY);
   const url = new URL(`/v${API_VERSION}${path}`, `https://${SERVER}`);
   const response = await fetch(`${url}?${queryParams}`);
 
   if (!response.ok) {
-    throw new Error("breeds API call failed");
+    throw new Error("API call failed");
   }
   return response.json();
 };
 
-const fetchBreeds = async () => {
-  return await fetchJSONFromCatsAPI("/breeds", {});
-};
-
-const fetchImageURLs = async (selectedBreedID) => {
-  const queryParams = new URLSearchParams({ limit: 10 });
-
-  if (selectedBreedID !== "") {
-    queryParams.append("breedID", selectedBreedID);
-  }
-
-  return await fetchJSONFromCatsAPI("/images/search", queryParams);
-};
-
 function CatApp() {
   let [breeds, setBreeds] = useState({ data: [], isLoading: true });
+  let [imageURLs, setImageURLs] = useState({ urls: [], isLoading: true });
   let [selectedBreedID, setSelectedBreedID] = useState("");
   let [index, setIndex] = useState(0);
+  let [direction, setDirection] = useState(NEXT);
 
   const onBreedChange = (value) => setSelectedBreedID(value);
+
   const onButtonClick = (value) => {
-    setIndex((index + value) % breeds.data.length);
+    let imageCount = imageURLs.urls.length;
+    let newIndex = (index + value) % imageCount;
+
+    if (newIndex < 0) {
+      newIndex = imageCount - 1;
+    }
+
+    console.log("new index", newIndex);
+    setIndex(newIndex);
   };
 
   useEffect(() => {
-    console.log("Use entire effect fired");
-    fetchBreeds()
+    fetchFromCatsAPI("/breeds", {})
       .then((json) => {
         let breeds = json.filter((breed) => ({
           id: breed.id,
@@ -81,6 +79,21 @@ function CatApp() {
       });
   }, []);
 
+  useEffect(() => {
+    const queryParams = new URLSearchParams({
+      limit: 8,
+      selectedBreedID,
+    });
+
+    fetchFromCatsAPI("/images/search", queryParams)
+      .then((json) => {
+        setImageURLs({ urls: json, isLoading: false });
+      })
+      .catch((err) => {
+        console.log("CAUGHT ERRROR: SEARCH", err);
+      });
+  }, [selectedBreedID]);
+
   return (
     <div className="CatApp">
       <BreedSelector
@@ -88,7 +101,7 @@ function CatApp() {
         breeds={breeds.data}
         isLoading={breeds.isLoading}
       />
-      <CatImage selectedBreedID={selectedBreedID} />
+      <CatImage imageURLs={imageURLs} index={index} />
       <CatControls onButtonClick={onButtonClick} />
     </div>
   );
@@ -107,22 +120,7 @@ function CatControls({ onButtonClick }) {
   );
 }
 
-function CatImage({ selectedBreedID }) {
-  let [imageURLs, setImageURLs] = useState({ urls: [], isLoading: true });
-  let [index, setIndex] = useState(0);
-
-  useEffect(() => {
-    console.log("USE EFFECT", selectedBreedID);
-    fetchImageURLs(selectedBreedID)
-      .then((json) => {
-        console.log("images", json);
-        setImageURLs({ urls: json, isLoading: false });
-      })
-      .catch((err) => {
-        console.log("CAUGHT ERRROR: SEARCH", err);
-      });
-  }, [selectedBreedID]);
-
+function CatImage({ imageURLs, index }) {
   return (
     <div className={`CatImage ${imageURLs.isLoading ? "isLoading" : ""}`}>
       {imageURLs.isLoading ? (

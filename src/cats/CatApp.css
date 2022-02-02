@@ -42,7 +42,6 @@ body {
 }
 
 .CatImage .image {
-  border: 2px solid green;
   background-size: cover;
   height: 100%;
 }
