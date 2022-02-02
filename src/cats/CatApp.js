@@ -12,15 +12,9 @@ const PREV = Symbol("prev");
 3) image slider with timer between each image
 countdown should reset for each image
 
-- handle server errors
-- refactor hierarchy to move images down
   - image preloading
   - api buffering
-  - breed selector (https://api.thecatapi.com/v1/breeds)
-  - requests images with (https://api.thecatapi.com/images/search?
-      breed_id={{selected_breed.id}})
   - timer to change image
-  - loading state
   - keyboard support
   - useReducer, useContext, useCallback, useMemo
 */
@@ -39,31 +33,11 @@ const fetchFromCatsAPI = async (path, params = {}) => {
 
 function CatApp() {
   let [selectedBreedID, setSelectedBreedID] = useState("");
-  let [isBreedsLoading, setIsBreedsLoading] = useState(true);
-  let [isImagesLoading, setIsImagesLoading] = useState(true);
-  let [isBreedsError, setIsBreedsError] = useState(false);
-  let [isImagesError, setIsImagesError] = useState(false);
-
   let [breeds, setBreeds] = useState([]);
-  let [images, setImages] = useState([]);
-  let [index, setIndex] = useState(0);
-
-  let [direction, setDirection] = useState(NEXT);
+  let [isBreedsLoading, setIsBreedsLoading] = useState(true);
+  let [isBreedsError, setIsBreedsError] = useState(false);
 
   const onBreedChange = (value) => setSelectedBreedID(value);
-
-  const onButtonClick = (value) => {
-    let imageCount = images.length;
-    let newIndex = (index + value) % imageCount;
-    setDirection(value === -1 ? PREV : NEXT);
-
-    if (newIndex < 0) {
-      newIndex = imageCount - 1;
-    }
-
-    console.log("new index", newIndex);
-    setIndex(newIndex);
-  };
 
   useEffect(() => {
     const fetchBreeds = async () => {
@@ -85,6 +59,41 @@ function CatApp() {
     fetchBreeds();
   }, []);
 
+  return (
+    <div className="CatApp">
+      <BreedSelector
+        onBreedChange={onBreedChange}
+        breeds={breeds}
+        isLoading={isBreedsLoading}
+        isError={isBreedsError}
+      />
+      <CatImage
+        isLoading={isBreedsLoading}
+        isError={isBreedsError}
+        selectedBreedID={selectedBreedID}
+      />
+    </div>
+  );
+}
+
+function CatImage({ isLoading, isError, selectedBreedID }) {
+  let [isImagesLoading, setIsImagesLoading] = useState(true);
+  let [isImagesError, setIsImagesError] = useState(false);
+  let [images, setImages] = useState([]);
+  let [index, setIndex] = useState(0);
+
+  const onButtonClick = (value) => {
+    let imageCount = images.length;
+    let newIndex = (index + value) % imageCount;
+
+    if (newIndex < 0) {
+      newIndex = imageCount - 1;
+    }
+
+    console.log("new index", newIndex);
+    setIndex(newIndex);
+  };
+
   useEffect(() => {
     const fetchImages = async () => {
       try {
@@ -104,64 +113,16 @@ function CatApp() {
       }
     };
 
-    if (!isBreedsLoading && !isBreedsError) {
+    if (!isLoading && !isError) {
       fetchImages();
     }
-  }, [selectedBreedID, isBreedsError, isBreedsLoading]);
+  }, [selectedBreedID, isError, isLoading]);
 
-  const isAnyLoading = isBreedsLoading || isImagesLoading;
-  const isAnyError = isBreedsError || isImagesError;
-
-  return (
-    <div className="CatApp">
-      <BreedSelector
-        onBreedChange={onBreedChange}
-        breeds={breeds}
-        isLoading={isBreedsLoading}
-        isError={isBreedsError}
-      />
-      <CatImage
-        images={images}
-        index={index}
-        isLoading={isAnyLoading}
-        isError={isAnyError}
-      />
-      <CatControls
-        isLoading={isAnyLoading}
-        isError={isAnyError}
-        onButtonClick={onButtonClick}
-      />
-    </div>
-  );
-}
-
-function CatControls({ onButtonClick, isError, isLoading }) {
-  return (
-    <div className="CatControls">
-      <button
-        disabled={isLoading || isError}
-        onClick={onButtonClick.bind(this, -1)}
-        value={-1}
-      >
-        &lt;
-      </button>
-      <button
-        disabled={isLoading || isError}
-        onClick={onButtonClick.bind(this, 1)}
-        value={1}
-      >
-        &gt;
-      </button>
-    </div>
-  );
-}
-
-function CatImage({ images, index, isLoading, isError }) {
   return (
     <div className="CatImage">
-      {isError ? (
+      {isError || isImagesError ? (
         <div className="message">An error has occurred</div>
-      ) : isLoading ? (
+      ) : isLoading || isImagesLoading ? (
         <div className="message">loading...</div>
       ) : (
         <div
@@ -171,6 +132,11 @@ function CatImage({ images, index, isLoading, isError }) {
           }}
         ></div>
       )}
+      <CatControls
+        isLoading={isLoading}
+        isError={isError}
+        onButtonClick={onButtonClick}
+      />
     </div>
   );
 }
@@ -193,6 +159,27 @@ function BreedSelector({ onBreedChange, breeds, isLoading, isError }) {
           ))}
         </select>
       </form>
+    </div>
+  );
+}
+
+function CatControls({ onButtonClick, isError, isLoading }) {
+  return (
+    <div className="CatControls">
+      <button
+        disabled={isLoading || isError}
+        onClick={onButtonClick.bind(this, -1)}
+        value={-1}
+      >
+        &lt;
+      </button>
+      <button
+        disabled={isLoading || isError}
+        onClick={onButtonClick.bind(this, 1)}
+        value={1}
+      >
+        &gt;
+      </button>
     </div>
   );
 }
