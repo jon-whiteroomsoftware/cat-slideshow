@@ -11,15 +11,13 @@ const PREV = Symbol("prev");
 /*
 3) image slider with timer between each image
 countdown should reset for each image
-  https://thecatapi.com/?
-  api_key=1a2691b0-d86c-41c1-b968-3b264d96ff78'
 
+- handle server errors
   - image preloading
   - api buffering
   - breed selector (https://api.thecatapi.com/v1/breeds)
   - requests images with (https://api.thecatapi.com/images/search?
       breed_id={{selected_breed.id}})
-  - handle server errors
   - timer to change image
   - loading state
   - keyboard support
@@ -40,7 +38,8 @@ const fetchFromCatsAPI = async (path, params = {}) => {
 
 function CatApp() {
   let [breeds, setBreeds] = useState({ data: [], isLoading: true });
-  let [imageURLs, setImageURLs] = useState({ urls: [], isLoading: true });
+  let [images, setImages] = useState([]);
+  let [isImageLoading, setIsImageLoading] = useState(true);
   let [selectedBreedID, setSelectedBreedID] = useState("");
   let [index, setIndex] = useState(0);
   let [direction, setDirection] = useState(NEXT);
@@ -48,8 +47,9 @@ function CatApp() {
   const onBreedChange = (value) => setSelectedBreedID(value);
 
   const onButtonClick = (value) => {
-    let imageCount = imageURLs.urls.length;
+    let imageCount = images.length;
     let newIndex = (index + value) % imageCount;
+    setDirection(value === -1 ? PREV : NEXT);
 
     if (newIndex < 0) {
       newIndex = imageCount - 1;
@@ -60,38 +60,39 @@ function CatApp() {
   };
 
   useEffect(() => {
-    fetchFromCatsAPI("/breeds", {})
-      .then((json) => {
-        let breeds = json.filter((breed) => ({
-          id: breed.id,
-          name: breed.name,
-        }));
-        breeds.unshift({ id: "", name: "All Breeds" });
+    const fetchBreeds = async () => {
+      const json = await fetchFromCatsAPI("/breeds", {});
 
-        setBreeds({
-          isLoading: false,
-          data: breeds,
-        });
-        setIndex(0);
-      })
-      .catch((err) => {
-        console.log("CAUGHT ERRROR: FETCH BREEDS", err);
+      let breeds = json.filter((breed) => ({
+        id: breed.id,
+        name: breed.name,
+      }));
+      breeds.unshift({ id: "", name: "All Breeds" });
+
+      setBreeds({
+        isLoading: false,
+        data: breeds,
       });
+      setIndex(0);
+    };
+
+    fetchBreeds();
   }, []);
 
   useEffect(() => {
-    const queryParams = new URLSearchParams({
-      limit: 8,
-      selectedBreedID,
-    });
-
-    fetchFromCatsAPI("/images/search", queryParams)
-      .then((json) => {
-        setImageURLs({ urls: json, isLoading: false });
-      })
-      .catch((err) => {
-        console.log("CAUGHT ERRROR: SEARCH", err);
+    const fetchImages = async () => {
+      const queryParams = new URLSearchParams({
+        limit: 8,
+        selectedBreedID,
       });
+
+      setIsImageLoading(true);
+      let json = await fetchFromCatsAPI("/images/search", queryParams);
+      setImages(json);
+      setIsImageLoading(false);
+    };
+
+    fetchImages();
   }, [selectedBreedID]);
 
   return (
@@ -101,7 +102,7 @@ function CatApp() {
         breeds={breeds.data}
         isLoading={breeds.isLoading}
       />
-      <CatImage imageURLs={imageURLs} index={index} />
+      <CatImage images={images} index={index} isImageLoading={isImageLoading} />
       <CatControls onButtonClick={onButtonClick} />
     </div>
   );
@@ -120,16 +121,16 @@ function CatControls({ onButtonClick }) {
   );
 }
 
-function CatImage({ imageURLs, index }) {
+function CatImage({ images, index, isImageLoading }) {
   return (
-    <div className={`CatImage ${imageURLs.isLoading ? "isLoading" : ""}`}>
-      {imageURLs.isLoading ? (
+    <div className={`CatImage ${isImageLoading ? "isLoading" : ""}`}>
+      {isImageLoading ? (
         <div className="loadMessage">loading</div>
       ) : (
         <div
           className="image"
           style={{
-            backgroundImage: `url(${imageURLs.urls[index].url})`,
+            backgroundImage: `url(${images[index].url})`,
           }}
         ></div>
       )}
