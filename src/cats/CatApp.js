@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import "./CatApp.css";
 
 const API_KEY = "1a2691b0-d86c-41c1-b968-3b264d96ff7";
+const API_VERSION = "1";
 const SERVER = "api.thecatapi.com";
 
 /*
@@ -14,40 +15,71 @@ countdown should reset for each image
   - requests images with (https://api.thecatapi.com/images/search?
       breed_id={{selected_breed.id}})
   - arrows to scroll
+  - image preloading
+  - api buffering
+  - handle server errors
   - fetch breeds to hook
   - timer to change image
   - loading state
   - keyboard support
 */
 
-const fetchBreeds = async () => {
-  try {
-    const url = `https://${SERVER}/v1/breeds?api_key=${API_KEY}`;
-    console.log(url);
-    const response = await fetch(url);
-    return response.json();
-  } catch (error) {
-    console.log("breed fetch error", error);
+const fetchJSONFromCatsAPI = async (path, params = {}) => {
+  const queryParams = new URLSearchParams(params);
+  queryParams.append("api_key", API_KEY);
+  const url = new URL(`/v${API_VERSION}${path}`, `https://${SERVER}`);
+  const response = await fetch(`${url}?${queryParams}`);
+
+  if (!response.ok) {
+    throw new Error("breeds API call failed");
   }
+  return response.json();
+};
+
+const fetchBreeds = async () => {
+  return await fetchJSONFromCatsAPI("/breeds", {});
+};
+
+const fetchImageURLs = async (selectedBreedID) => {
+  const queryParams = new URLSearchParams({ limit: 10 });
+
+  if (selectedBreedID !== "") {
+    queryParams.append("breedID", selectedBreedID);
+  }
+
+  return await fetchJSONFromCatsAPI("/images/search", queryParams);
 };
 
 function CatApp() {
   let [breeds, setBreeds] = useState({ data: [], isLoading: true });
   let [selectedBreedID, setSelectedBreedID] = useState("");
+  let [index, setIndex] = useState(0);
 
-  const onBreedChange = (value) => {
-    console.log("On breed change", value);
+  const onBreedChange = (value) => setSelectedBreedID(value);
+  const onButtonClick = (value) => {
+    setIndex((index + value) % breeds.data.length);
   };
 
   useEffect(() => {
-    console.log("Use effect fired");
-    fetchBreeds().then((json) => {
-      setBreeds({
-        isLoading: false,
-        data: json.filter((breed) => ({ id: breed.id, name: breed.name })),
+    console.log("Use entire effect fired");
+    fetchBreeds()
+      .then((json) => {
+        let breeds = json.filter((breed) => ({
+          id: breed.id,
+          name: breed.name,
+        }));
+        breeds.unshift({ id: "", name: "All Breeds" });
+
+        setBreeds({
+          isLoading: false,
+          data: breeds,
+        });
+        setIndex(0);
+      })
+      .catch((err) => {
+        console.log("CAUGHT ERRROR: FETCH BREEDS", err);
       });
-    });
-  }, [selectedBreedID]);
+  }, []);
 
   return (
     <div className="CatApp">
@@ -56,31 +88,55 @@ function CatApp() {
         breeds={breeds.data}
         isLoading={breeds.isLoading}
       />
-      <CatImage />
-      <CatControls />
+      <CatImage selectedBreedID={selectedBreedID} />
+      <CatControls onButtonClick={onButtonClick} />
     </div>
   );
 }
 
-function CatControls() {
-  const onButtonClick = (e) => {
-    console.log("Button click", e.target.value);
-  };
-
+function CatControls({ onButtonClick }) {
   return (
     <div className="CatControls">
-      <button onClick={onButtonClick} value={-1}>
+      <button onClick={onButtonClick.bind(this, -1)} value={-1}>
         &lt;
       </button>
-      <button onClick={onButtonClick} value={1}>
+      <button onClick={onButtonClick.bind(this, 1)} value={1}>
         &gt;
       </button>
     </div>
   );
 }
 
-function CatImage() {
-  return <div className="CatImage"></div>;
+function CatImage({ selectedBreedID }) {
+  let [imageURLs, setImageURLs] = useState({ urls: [], isLoading: true });
+  let [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    console.log("USE EFFECT", selectedBreedID);
+    fetchImageURLs(selectedBreedID)
+      .then((json) => {
+        console.log("images", json);
+        setImageURLs({ urls: json, isLoading: false });
+      })
+      .catch((err) => {
+        console.log("CAUGHT ERRROR: SEARCH", err);
+      });
+  }, [selectedBreedID]);
+
+  return (
+    <div className={`CatImage ${imageURLs.isLoading ? "isLoading" : ""}`}>
+      {imageURLs.isLoading ? (
+        <div className="loadMessage">loading</div>
+      ) : (
+        <div
+          className="image"
+          style={{
+            backgroundImage: `url(${imageURLs.urls[index].url})`,
+          }}
+        ></div>
+      )}
+    </div>
+  );
 }
 
 function BreedSelector({ onBreedChange, breeds, isLoading }) {
