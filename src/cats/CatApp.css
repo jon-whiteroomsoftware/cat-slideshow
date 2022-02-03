@@ -28,7 +28,7 @@ body {
   width: 200px;
 }
 
-.BreedSelector form select.isDisabled {
+.BreedSelector form select.isError {
   background-color: #999;
 }
 

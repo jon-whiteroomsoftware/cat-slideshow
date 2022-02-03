@@ -147,7 +147,7 @@ function BreedSelector({ onBreedChange, breeds, isLoading, isError }) {
       <form>
         <label>Breed</label>
         <select
-          className={isError ? "isDisabled" : ""}
+          className={isError ? "isError" : ""}
           disabled={isLoading || isError}
           onChange={(e) => onBreedChange(e.target.value)}
           type="select"
