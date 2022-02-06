@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import "./CatApp.css";
 
-const API_KEY = "1a2691b0-d86c-41c1-b968-3b264d96ff7";
+let API_KEY = "1a2691b0-d86c-41c1-b968-3b264d96ff7";
+API_KEY = "DEMO-API-KEY";
 const API_VERSION = "1";
 const SERVER = "api.thecatapi.com";
 
@@ -15,20 +16,31 @@ countdown should reset for each image
   - image preloading
   - api buffering
   - timer to change image
-  - keyboard support
   - useReducer, useContext, useCallback, useMemo
 */
 
 const fetchFromCatsAPI = async (path, params = {}) => {
   const queryParams = new URLSearchParams(params);
-  queryParams.append("api_key", API_KEY);
   const url = new URL(`/v${API_VERSION}${path}`, `https://${SERVER}`);
-  const response = await fetch(`${url}?${queryParams}`);
+  console.log("CAT API FETCH", url.toString(), queryParams.toString());
+
+  const response = await fetch(`${url}?${queryParams}`, {
+    headers: {
+      "x-api-key": API_KEY,
+    },
+  });
 
   if (!response.ok) {
     throw new Error("API call failed");
   }
-  return response.json();
+
+  return {
+    json: await response.json(),
+    pagination: {
+      count: response.headers.get("Pagination-Count"),
+      page: response.headers.get("Pagination-Page"),
+    },
+  };
 };
 
 function CatApp() {
@@ -42,7 +54,7 @@ function CatApp() {
   useEffect(() => {
     const fetchBreeds = async () => {
       try {
-        const json = await fetchFromCatsAPI("/breeds", {});
+        const { json } = await fetchFromCatsAPI("/breeds", {});
 
         let breeds = [{ id: "", name: "All Breeds" }].concat(
           json.filter((b) => ({ id: b.id, name: b.name }))
@@ -76,11 +88,27 @@ function CatApp() {
   );
 }
 
+function preloadImage(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = function () {
+      resolve(img);
+    };
+    img.onerror = img.onabort = function () {
+      reject(url);
+    };
+    img.src = url;
+  });
+}
+
 function CatImage({ isLoading, isError, selectedBreedID }) {
-  let [isImagesLoading, setIsImagesLoading] = useState(true);
-  let [isImagesError, setIsImagesError] = useState(false);
-  let [images, setImages] = useState([]);
-  let [index, setIndex] = useState(0);
+  const PAGE_SIZE = 8;
+  const [isImagesLoading, setIsImagesLoading] = useState(true);
+  const [isImagesError, setIsImagesError] = useState(false);
+  const [images, setImages] = useState([]);
+  const [index, setIndex] = useState(0);
+  const [isNextImageLoading, setIsNextImageLoading] = useState(false);
+  const [imageCount, setImageCount] = useState(null);
 
   const onButtonClick = (value) => {
     let imageCount = images.length;
@@ -90,9 +118,18 @@ function CatImage({ isLoading, isError, selectedBreedID }) {
       newIndex = imageCount - 1;
     }
 
-    console.log("new index", newIndex);
-    setIndex(newIndex);
+    setIsNextImageLoading(true);
+    console.log("new index", newIndex, images[newIndex].url);
+
+    preloadImage(images[newIndex].url).then(() => {
+      setIsNextImageLoading(false);
+      setIndex(newIndex);
+    });
   };
+
+  // useEffect(() => {
+  //   console.log("EFFECT", index, imageCount);
+  // }, [index, imageCount]);
 
   useEffect(() => {
     const fetchImages = async () => {
@@ -101,12 +138,17 @@ function CatImage({ isLoading, isError, selectedBreedID }) {
         setIsImagesError(false);
         const queryParams = new URLSearchParams({
           limit: 8,
+          order: "DESC",
           selectedBreedID,
         });
-        let json = await fetchFromCatsAPI("/images/search", queryParams);
+        let { json, pagination } = await fetchFromCatsAPI(
+          "/images/search",
+          queryParams
+        );
         setImages(json);
         setIndex(0);
         setIsImagesLoading(false);
+        setImageCount(pagination.count);
       } catch (error) {
         setIsImagesError(true);
         setIsImagesLoading(false);
@@ -126,7 +168,7 @@ function CatImage({ isLoading, isError, selectedBreedID }) {
         <div className="message">loading...</div>
       ) : (
         <div
-          className="image"
+          className={`image ${isNextImageLoading ? "nextLoading" : ""}`}
           style={{
             backgroundImage: `url(${images[index].url})`,
           }}
