@@ -8,12 +8,11 @@ const SERVER = "api.thecatapi.com";
 
 /*
 3) image slider with timer between each image
+  - avoid possibility of double-fetching by adding key on API call
+  - timer to change image
   - countdown should reset for each image
   - can't rewind past zero
-  - unify first and subsequent fetches
-  - store images by page?
-  - timer to change image
-  - useReducer, useContext, useCallback, useMemo
+  - useContext, useCallback, useMemo
 */
 
 function preloadImage(url) {
@@ -54,9 +53,8 @@ const fetchFromCatsAPI = async (path, params = {}) => {
 };
 
 function CatApp() {
-  let [selectedBreedID, setSelectedBreedID] = useState("");
-  let [breeds, setBreeds] = useState([]);
-  let [isBreedsLoading, setIsBreedsLoading] = useState(true);
+  let [selectedBreedID, setSelectedBreedID] = useState(null);
+  let [breeds, setBreeds] = useState(null);
   let [isBreedsError, setIsBreedsError] = useState(false);
 
   const onBreedChange = (value) => setSelectedBreedID(value);
@@ -66,15 +64,14 @@ function CatApp() {
       try {
         const { json } = await fetchFromCatsAPI("/breeds", {});
 
-        let breeds = [{ id: "", name: "All Breeds" }].concat(
+        let breeds = [{ id: "all", name: "All Breeds" }].concat(
           json.filter((b) => ({ id: b.id, name: b.name }))
         );
 
         setBreeds(breeds);
-        setIsBreedsLoading(false);
+        setSelectedBreedID("all");
       } catch (error) {
         setIsBreedsError(true);
-        setIsBreedsLoading(false);
       }
     };
 
@@ -86,162 +83,210 @@ function CatApp() {
       <BreedSelector
         onBreedChange={onBreedChange}
         breeds={breeds}
-        isLoading={isBreedsLoading}
         isError={isBreedsError}
       />
       <CatImage
-        isLoading={isBreedsLoading}
-        isError={isBreedsError}
+        isBreedsError={isBreedsError}
         selectedBreedID={selectedBreedID}
       />
     </div>
   );
 }
 
-function getCommonImageSearchParams(pageSize, selectedBreedID) {
-  return new URLSearchParams({
-    limit: pageSize,
-    order: "DESC",
-    selectedBreedID,
-  });
-}
-
 function shortenURL(url) {
   return url.replace(/.*\//, "");
 }
 
-function CatImage({ isLoading, isError, selectedBreedID }) {
-  const PAGE_SIZE = 10;
-  const FETCH_BOUNDARY = 3;
-  const [isImagesLoading, setIsImagesLoading] = useState(true);
-  const [isImagesError, setIsImagesError] = useState(false);
-  const [images, setImages] = useState([]);
-  const [index, setIndex] = useState(0);
-  const [isNextImageLoading, setIsNextImageLoading] = useState(false);
-  const [pageCount, setPageCount] = useState(0);
+const PAGE_SIZE = 8;
+const FETCH_BOUNDARY = 2;
 
-  const commonQueryParams = useMemo(
-    () => getCommonImageSearchParams(PAGE_SIZE, selectedBreedID),
-    [PAGE_SIZE, selectedBreedID]
-  );
-
-  const onButtonClick = (value) => {
-    let imageCount = images.length;
-    let newIndex = (index + value) % imageCount;
-
-    if (newIndex < 0) {
-      newIndex = imageCount - 1;
-    }
-
-    setIsNextImageLoading(true);
-    console.log("new index", newIndex, shortenURL(images[newIndex].url));
-
-    preloadImage(images[newIndex].url).then(() => {
-      setIsNextImageLoading(false);
-      setIndex(newIndex);
-    });
-
-    const nextImageURL = images[newIndex + 1]?.url;
-
-    if (nextImageURL) {
-      console.log("preloading next", newIndex + 1, shortenURL(nextImageURL));
-      preloadImage(nextImageURL);
-    }
-  };
-
-  // loadMore effect
-  //   index, isLoading, is Error,
-  //   set isImagesLoading is false
-
-  // breed change effect - selectedBreedID
-  //   setIndex(0), empty out images, pageCount -> imagesLoading is true
-
-  // on image show change
-  //   reset timer
-
-  useEffect(() => {
-    if (!isLoading && index + FETCH_BOUNDARY >= images.length) {
-      const fetchMoreImages = async (pageIndex) => {
-        const queryParams = commonQueryParams;
-        queryParams.append("page", pageIndex);
-
-        try {
-          let { json } = await fetchFromCatsAPI("/images/search", queryParams);
-
-          console.log("Loaded page", pageIndex, images.length, json.length);
-          setImages([...images, ...json]);
-        } catch (error) {}
+function catImageReducer(state, action) {
+  console.log("Reduce", action);
+  switch (action.type) {
+    case "change-breed":
+      return {
+        ...state,
+        index: 0,
+        imagePages: {},
+        pageCount: null,
+        areImagesLoading: true,
       };
 
-      const nextPageIndex = images.length / PAGE_SIZE;
-      console.log("Need to fetch more", nextPageIndex);
-      fetchMoreImages(nextPageIndex);
-    }
-  }, [index, images, commonQueryParams, isLoading]);
+    case "fetch-page":
+      return {
+        ...state,
+        imagePages: { ...state.imagePages, [action.index]: [] },
+      };
+
+    case "fetch-page-for-current-index":
+      return {
+        ...state,
+        areImagesLoading: true,
+        imagePages: { ...state.imagePages, [action.index]: [] },
+      };
+
+    case "page-loaded":
+      return {
+        ...state,
+        imagePages: { ...state.imagePages, [action.index]: action.json },
+        areImagesLoading: false,
+      };
+
+    case "index-changing":
+      return {
+        ...state,
+        isIndexChanging: true,
+      };
+
+    case "index-changed":
+      return {
+        ...state,
+        index: action.index,
+        isIndexChanging: false,
+      };
+
+    default:
+      return state;
+  }
+}
+
+function CatImage({ isBreedsError, selectedBreedID }) {
+  const [state, dispatch] = useReducer(catImageReducer, {
+    imagePages: {},
+    index: null,
+    maxPage: null,
+    areImagesLoading: true,
+    canShowCurrentImage: false,
+    isIndexChanging: false,
+  });
+
+  const imageIndex = (index) => ({
+    pageIndex: Math.floor(index / PAGE_SIZE),
+    pageOffset: index % PAGE_SIZE,
+  });
+
+  const imageURL = (index) => {
+    const { pageIndex, pageOffset } = imageIndex(index);
+    const imagePage = state.imagePages[pageIndex];
+    return imagePage ? imagePage[pageOffset]?.url : null;
+  };
 
   useEffect(() => {
-    const fetchImages = async () => {
+    if (selectedBreedID !== null) {
+      dispatch({ type: "change-breed" });
+    }
+  }, [selectedBreedID]);
+
+  useEffect(() => {
+    if (state.index === null) {
+      return;
+    }
+
+    const fetchPage = async (pageIndex) => {
       try {
-        setIsImagesLoading(true);
-        setIsImagesError(false);
-        let { json, pagination } = await fetchFromCatsAPI(
-          "/images/search",
-          commonQueryParams
-        );
-        setImages(json);
-        setIndex(0);
-        setPageCount(Math.ceil(pagination.count / PAGE_SIZE));
-        setIsImagesLoading(false);
+        let { json } = await fetchFromCatsAPI("/images/search", {
+          limit: PAGE_SIZE,
+          order: "ASC",
+          page: pageIndex,
+          selectedBreedID,
+        });
+
+        dispatch({ type: "page-loaded", index: pageIndex, json });
       } catch (error) {
-        setIsImagesError(true);
-        setIsImagesLoading(false);
+        console.log("Fetch error", { pageIndex, selectedBreedID });
       }
     };
 
-    if (!isLoading && !isError) {
-      fetchImages();
+    // do we have the image URLs for this index?
+    const { pageIndex } = imageIndex(state.index);
+
+    if (!state.imagePages[pageIndex]) {
+      dispatch({ type: "fetch-page-for-current-index", index: pageIndex });
+      fetchPage(pageIndex);
     }
-  }, [selectedBreedID, isError, isLoading, commonQueryParams]);
+
+    const prefetchIndex = imageIndex(state.index + FETCH_BOUNDARY);
+
+    if (!state.imagePages[prefetchIndex.pageIndex]) {
+      dispatch({ type: "fetch-page", index: prefetchIndex.pageIndex });
+      fetchPage(prefetchIndex.pageIndex);
+
+      console.log("Need to load next page");
+    }
+  }, [state.index, selectedBreedID, state.imagePages]);
+
+  const onButtonClick = (value) => {
+    dispatch({ type: "index-changing" });
+    const newIndex = Math.max(0, state.index + value);
+    const url = imageURL(newIndex);
+
+    if (url !== null) {
+      dispatch({ type: "index-changed", index: newIndex });
+      return;
+    }
+
+    preloadImage(url).then(() => {
+      dispatch({ type: "index-changed", index: newIndex });
+    });
+  };
+
+  const isLoading = selectedBreedID === null || state.areImagesLoading;
+  const isError = isBreedsError;
+  let url = null;
+
+  if (!isLoading && state.index !== null) {
+    const { pageIndex, pageOffset } = imageIndex(state.index);
+    const imagePage = state.imagePages[pageIndex];
+    url = imagePage ? imagePage[pageOffset]?.url : "";
+  }
+
+  // console.log({
+  //   index: state.index,
+  //   selectedBreedID,
+  //   imagesLoading: state.areImagesLoading,
+  // });
 
   return (
     <div className="CatImage">
-      {isError || isImagesError ? (
+      {isError ? (
         <div className="message">An error has occurred</div>
-      ) : isLoading || isImagesLoading ? (
+      ) : isLoading ? (
         <div className="message">loading...</div>
       ) : (
         <div
-          className={`image ${isNextImageLoading ? "nextLoading" : ""}`}
+          className={`image ${state.isIndexChanging ? "nextLoading" : ""}`}
           style={{
-            backgroundImage: `url(${images[index].url})`,
+            backgroundImage: `url(${url})`,
           }}
         ></div>
       )}
       <CatControls
-        isLoading={isLoading}
-        isError={isError}
+        isLoading={isLoading || state.isIndexChanging}
+        isError={isBreedsError}
         onButtonClick={onButtonClick}
       />
     </div>
   );
 }
 
-function BreedSelector({ onBreedChange, breeds, isLoading, isError }) {
+function BreedSelector({ onBreedChange, breeds, isError }) {
   return (
     <div className="BreedSelector">
       <form>
         <label>Breed</label>
         <select
           className={isError ? "isError" : ""}
-          disabled={isLoading || isError}
+          disabled={breeds === null || isError}
           onChange={(e) => onBreedChange(e.target.value)}
           type="select"
         >
-          {breeds.map((breed) => (
-            <option key={breed.id} value={breed.id}>
-              {breed.name}
-            </option>
-          ))}
+          {breeds === null
+            ? []
+            : breeds.map((breed) => (
+                <option key={breed.id} value={breed.id}>
+                  {breed.name}
+                </option>
+              ))}
         </select>
       </form>
     </div>
