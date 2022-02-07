@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useReducer } from "react";
 import "./CatApp.css";
 
 let API_KEY = "1a2691b0-d86c-41c1-b968-3b264d96ff7";
@@ -6,18 +6,28 @@ API_KEY = "DEMO-API-KEY";
 const API_VERSION = "1";
 const SERVER = "api.thecatapi.com";
 
-const NEXT = Symbol("next");
-const PREV = Symbol("prev");
-
 /*
 3) image slider with timer between each image
-countdown should reset for each image
-
-  - image preloading
-  - api buffering
+  - countdown should reset for each image
+  - can't rewind past zero
+  - unify first and subsequent fetches
+  - store images by page?
   - timer to change image
   - useReducer, useContext, useCallback, useMemo
 */
+
+function preloadImage(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = function () {
+      resolve(img);
+    };
+    img.onerror = img.onabort = function () {
+      reject(url);
+    };
+    img.src = url;
+  });
+}
 
 const fetchFromCatsAPI = async (path, params = {}) => {
   const queryParams = new URLSearchParams(params);
@@ -88,27 +98,32 @@ function CatApp() {
   );
 }
 
-function preloadImage(url) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = function () {
-      resolve(img);
-    };
-    img.onerror = img.onabort = function () {
-      reject(url);
-    };
-    img.src = url;
+function getCommonImageSearchParams(pageSize, selectedBreedID) {
+  return new URLSearchParams({
+    limit: pageSize,
+    order: "DESC",
+    selectedBreedID,
   });
 }
 
+function shortenURL(url) {
+  return url.replace(/.*\//, "");
+}
+
 function CatImage({ isLoading, isError, selectedBreedID }) {
-  const PAGE_SIZE = 8;
+  const PAGE_SIZE = 10;
+  const FETCH_BOUNDARY = 3;
   const [isImagesLoading, setIsImagesLoading] = useState(true);
   const [isImagesError, setIsImagesError] = useState(false);
   const [images, setImages] = useState([]);
   const [index, setIndex] = useState(0);
   const [isNextImageLoading, setIsNextImageLoading] = useState(false);
-  const [imageCount, setImageCount] = useState(null);
+  const [pageCount, setPageCount] = useState(0);
+
+  const commonQueryParams = useMemo(
+    () => getCommonImageSearchParams(PAGE_SIZE, selectedBreedID),
+    [PAGE_SIZE, selectedBreedID]
+  );
 
   const onButtonClick = (value) => {
     let imageCount = images.length;
@@ -119,36 +134,64 @@ function CatImage({ isLoading, isError, selectedBreedID }) {
     }
 
     setIsNextImageLoading(true);
-    console.log("new index", newIndex, images[newIndex].url);
+    console.log("new index", newIndex, shortenURL(images[newIndex].url));
 
     preloadImage(images[newIndex].url).then(() => {
       setIsNextImageLoading(false);
       setIndex(newIndex);
     });
+
+    const nextImageURL = images[newIndex + 1]?.url;
+
+    if (nextImageURL) {
+      console.log("preloading next", newIndex + 1, shortenURL(nextImageURL));
+      preloadImage(nextImageURL);
+    }
   };
 
-  // useEffect(() => {
-  //   console.log("EFFECT", index, imageCount);
-  // }, [index, imageCount]);
+  // loadMore effect
+  //   index, isLoading, is Error,
+  //   set isImagesLoading is false
+
+  // breed change effect - selectedBreedID
+  //   setIndex(0), empty out images, pageCount -> imagesLoading is true
+
+  // on image show change
+  //   reset timer
+
+  useEffect(() => {
+    if (!isLoading && index + FETCH_BOUNDARY >= images.length) {
+      const fetchMoreImages = async (pageIndex) => {
+        const queryParams = commonQueryParams;
+        queryParams.append("page", pageIndex);
+
+        try {
+          let { json } = await fetchFromCatsAPI("/images/search", queryParams);
+
+          console.log("Loaded page", pageIndex, images.length, json.length);
+          setImages([...images, ...json]);
+        } catch (error) {}
+      };
+
+      const nextPageIndex = images.length / PAGE_SIZE;
+      console.log("Need to fetch more", nextPageIndex);
+      fetchMoreImages(nextPageIndex);
+    }
+  }, [index, images, commonQueryParams, isLoading]);
 
   useEffect(() => {
     const fetchImages = async () => {
       try {
         setIsImagesLoading(true);
         setIsImagesError(false);
-        const queryParams = new URLSearchParams({
-          limit: 8,
-          order: "DESC",
-          selectedBreedID,
-        });
         let { json, pagination } = await fetchFromCatsAPI(
           "/images/search",
-          queryParams
+          commonQueryParams
         );
         setImages(json);
         setIndex(0);
+        setPageCount(Math.ceil(pagination.count / PAGE_SIZE));
         setIsImagesLoading(false);
-        setImageCount(pagination.count);
       } catch (error) {
         setIsImagesError(true);
         setIsImagesLoading(false);
@@ -158,7 +201,7 @@ function CatImage({ isLoading, isError, selectedBreedID }) {
     if (!isLoading && !isError) {
       fetchImages();
     }
-  }, [selectedBreedID, isError, isLoading]);
+  }, [selectedBreedID, isError, isLoading, commonQueryParams]);
 
   return (
     <div className="CatImage">
