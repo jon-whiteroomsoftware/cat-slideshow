@@ -14,6 +14,7 @@ import {
 } from "./utils.js";
 import getCatsApiFetchParams from "./getCatsApiFetchParams.js";
 import usePaginatedFetch from "./usePaginatedFetch";
+import fetchFromCatsAPI from "./fetchFromCatsAPI.js";
 import "./CatApp.css";
 import "./loadingSpinner.css";
 
@@ -40,14 +41,17 @@ import "./loadingSpinner.css";
 */
 
 const PAGE_SIZE = 8;
+const BREED_ID_KEY = "CatApp-breed-id";
 
 function catAppReducer(state, action) {
   console.log("%ccatapp: " + action.type, "color: green", action);
   switch (action.type) {
-    case "select-breed":
+    case "select-breed": {
+      window.localStorage.setItem(BREED_ID_KEY, action.id);
       return { ...state, selectedBreedID: action.id };
+    }
     case "breeds-loaded":
-      return { breeds: action.breeds, selectedBreedID: "all" };
+      return { ...state, breeds: action.breeds };
     default:
       throw new Error(`Unhandled action type: ${action.type}`);
   }
@@ -56,15 +60,11 @@ function catAppReducer(state, action) {
 function CatApp() {
   const [state, dispatch] = useReducer(catAppReducer, {
     breeds: null,
-    selectedBreedID: null,
+    selectedBreedID: window.localStorage.getItem(BREED_ID_KEY) || "all",
   });
 
-  const { response, status, error, runFetch } = useAbortableFetch("pending");
-  console.log("Render", status, response, error);
-
-  const onBreedChange = (value) => {
-    dispatch({ type: "select-breed", id: value });
-  };
+  const { status, runFetch } = useAbortableFetch("pending");
+  console.log("Render", status);
 
   useEffect(() => {
     const { url, options } = getCatsApiFetchParams("/breeds", undefined, 3000);
@@ -72,7 +72,10 @@ function CatApp() {
 
     runFetch(url, options)
       .then(async (response) => {
-        console.log("RESPONSE", response);
+        if (!response || !response.ok) {
+          throw new Error("API call failed");
+        }
+
         const json = await response.json();
         let breeds = [{ id: "all", name: "All Breeds" }].concat(
           json.filter((b) => ({ id: b.id, name: b.name }))
@@ -81,27 +84,100 @@ function CatApp() {
         dispatch({ type: "breeds-loaded", breeds });
       })
       .catch((error) => {
-        console.log("CAUGHT", error);
+        // suppress error
       });
   }, [runFetch]);
+
+  const isLoading = status === "pending";
+  const isError = status === "rejected";
 
   return (
     <div className="CatApp">
       <BreedSelector
-        onBreedChange={onBreedChange}
+        dispatch={dispatch}
         breeds={state.breeds}
-        isLoading={status === "pending"}
-        isError={status === "rejected"}
+        selectedBreedID={state.selectedBreedID}
+        isLoading={isLoading}
+        isError={isError}
       />
-      {/* <CatImage
-        isBreedsError={isBreedsError}
-        selectedBreedID={selectedBreedID}
-      /> */}
+      <CatImage
+        isLoading={isLoading}
+        isError={isError}
+        selectedBreedID={state.selectedBreedID}
+      />
     </div>
   );
 }
 
-function BreedSelector({ onBreedChange, breeds, isLoading, isError }) {
+function catImageReducer(state, action) {
+  console.log("%ccatimage: " + action.type, "color: orange", action);
+  switch (action.type) {
+    case "change-index":
+      return { ...state, index: state.index + action.increment };
+    default:
+      throw new Error(`Unhandled action type: ${action.type}`);
+  }
+}
+
+function CatImage({ isLoading, isError, selectedBreedID }) {
+  const [state, dispatch] = useReducer(catImageReducer, {
+    index: null,
+    maxPage: null,
+  });
+
+  return (
+    <div className="CatImage">
+      {/* {isError ? (
+        <div className="message">An error has occurred</div>
+      ) : isLoading ? (
+        <div className="message">loading...</div>
+      ) : (
+        <div
+          className={`image ${state.isIndexChanging ? "nextLoading" : ""}`}
+          style={{
+            backgroundImage: `url(${url})`,
+          }}
+        ></div>
+      )} */}
+      <CatControls
+        dispatch={dispatch}
+        isDisabled={false}
+        canScrollLeft={state.index !== 0}
+      />
+    </div>
+  );
+}
+
+function CatControls({ dispatch, isDisabled, canScrollLeft }) {
+  return (
+    <div className="CatControls">
+      <button
+        disabled={isDisabled || !canScrollLeft}
+        onClick={() => dispatch({ type: "change-index", increment: -1 })}
+      >
+        &lt;
+      </button>
+      <button
+        disabled={isDisabled}
+        onClick={() => dispatch({ type: "change-index", increment: 1 })}
+      >
+        &gt;
+      </button>
+    </div>
+  );
+}
+
+function BreedSelector({
+  dispatch,
+  breeds,
+  selectedBreedID,
+  isLoading,
+  isError,
+}) {
+  function onSelectChange(e) {
+    dispatch({ type: "select-breed", id: e.target.value });
+  }
+
   return (
     <div className="BreedSelector">
       <form>
@@ -110,8 +186,9 @@ function BreedSelector({ onBreedChange, breeds, isLoading, isError }) {
           <select
             className={isError ? "isError" : ""}
             disabled={breeds === null || isError}
-            onChange={(e) => onBreedChange(e.target.value)}
+            onChange={onSelectChange}
             type="select"
+            value={selectedBreedID}
           >
             {breeds === null
               ? []
@@ -136,7 +213,7 @@ function BreedSelector({ onBreedChange, breeds, isLoading, isError }) {
 
 const FETCH_BOUNDARY = 2;
 
-function catImageReducer(state, action) {
+function oldCatImageReducer(state, action) {
   // console.log("Reduce", action);
   switch (action.type) {
     case "change-breed":
@@ -186,7 +263,7 @@ function catImageReducer(state, action) {
   }
 }
 
-function CatImage({ isBreedsError, selectedBreedID }) {
+function CatImageOld({ isBreedsError, selectedBreedID }) {
   const [state, dispatch] = useReducer(catImageReducer, {
     imagePages: {},
     index: null,
@@ -214,13 +291,13 @@ function CatImage({ isBreedsError, selectedBreedID }) {
 
     const fetchPage = async (pageIndex) => {
       try {
-        // let { json } = await fetchFromCatsAPI("/images/search", {
-        //   limit: PAGE_SIZE,
-        //   order: "ASC",
-        //   page: pageIndex,
-        //   selectedBreedID,
-        // });
-        // dispatch({ type: "page-loaded", index: pageIndex, json });
+        let { json } = await fetchFromCatsAPI("/images/search", {
+          limit: PAGE_SIZE,
+          order: "ASC",
+          page: pageIndex,
+          selectedBreedID,
+        });
+        dispatch({ type: "page-loaded", index: pageIndex, json });
       } catch (error) {
         console.log("Fetch error", { pageIndex, selectedBreedID });
       }
@@ -305,25 +382,6 @@ function CatImage({ isBreedsError, selectedBreedID }) {
         isError={isBreedsError}
         onButtonClick={onButtonClick}
       />
-    </div>
-  );
-}
-
-function CatControls({ onButtonClick, isError, isLoading, canScrollLeft }) {
-  return (
-    <div className="CatControls">
-      <button
-        disabled={isLoading || isError || !canScrollLeft}
-        onClick={onButtonClick.bind(this, -1)}
-      >
-        &lt;
-      </button>
-      <button
-        disabled={isLoading || isError}
-        onClick={onButtonClick.bind(this, 1)}
-      >
-        &gt;
-      </button>
     </div>
   );
 }
