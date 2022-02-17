@@ -3,12 +3,16 @@ let API_KEY = "1a2691b0-d86c-41c1-b968-3b264d96ff7";
 const API_VERSION = "1";
 const SERVER = "api.thecatapi.com";
 
-const fetchFromCatsAPI = async (path, params = {}, options = {}) => {
+const fetchFromCatsAPI = async (path, params = {}, options = {}, isSlow) => {
   const queryParams = new URLSearchParams(params);
-  const url = new URL(`/v${API_VERSION}${path}`, `https://${SERVER}`);
+  let url = new URL(`/v${API_VERSION}${path}`, `https://${SERVER}`);
   console.log("CAT API FETCH", url.toString(), queryParams.toString(), options);
 
-  const response = await fetch(`https://deelay.me/3000/${url}?${queryParams}`, {
+  if (isSlow) {
+    url = "https://deelay.me/3000/" + url;
+  }
+
+  const response = await fetch(`${url}?${queryParams}`, {
     ...options,
     headers: { "x-api-key": API_KEY },
   });

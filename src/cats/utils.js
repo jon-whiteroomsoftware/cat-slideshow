@@ -59,53 +59,46 @@ function useAsync(initialState = "idle") {
   return { ...state, run, abort };
 }
 
-function useAbortableFetch(url, options, initialState) {
-  const initialStatus = url ? "pending" : "idle";
-  const state = useAsync({ initialStatus });
-  const { status, data, error, run, abort: asyncAbort } = state;
-  const controllersRef = useRef([]);
+function useAbortableFetch(initialStatus) {
+  const state = useAsync(initialStatus);
+  const { status, data, error, run: asyncRun, abort: asyncAbort } = state;
+  const { current: controller } = useRef(new AbortController());
 
-  const abort = useCallback(() => {
-    if (controllersRef.current.length) {
-      controllersRef.current.forEach((c) => c.abort());
-      controllersRef.current = [];
-      asyncAbort();
-    }
-  }, [asyncAbort]);
+  const runFetch = useCallback(
+    (url, options) => {
+      if (!url) {
+        return;
+      }
+
+      const promise = window
+        .fetch(url, { ...(options || {}), signal: controller.signal })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error("API call failed");
+          }
+
+          return response;
+        })
+        .catch((error) => {
+          if (error.name !== "AbortError") {
+            throw error;
+          }
+        });
+
+      asyncRun(promise);
+      return promise;
+    },
+    [asyncRun, controller.signal]
+  );
 
   useEffect(() => {
-    console.log("USE EFFECT");
+    return () => {
+      controller.abort();
+      asyncAbort();
+    };
+  }, [asyncAbort, controller]);
 
-    if (!url) {
-      return;
-    }
-
-    const controller = new AbortController();
-    const signal = controller.signal;
-    const opts = { ...(options || {}), signal };
-    controllersRef.current.push(controller);
-    const promise = window.fetch(url, opts);
-
-    promise
-      .catch((error) => {
-        if (error.name !== "AbortError") {
-          throw error;
-        }
-      })
-      .finally(() => {
-        if (controllersRef.current.find((c) => c === controller)) {
-          controllersRef.current = controllersRef.current.filter(
-            (c) => c !== controller
-          );
-        }
-      });
-
-    run(promise);
-
-    return () => abort();
-  }, [url, options, run, abort]);
-
-  return { status, data, error, abort };
+  return { response: data, status, error, runFetch };
 }
 
 const LoadState = makeEnumObject("Idle", "Loading", "Loaded", "Error");

@@ -17,9 +17,17 @@ body {
   justify-content: center;
 }
 
+.BreedSelector form {
+  position: relative;
+}
+
 .BreedSelector form label {
   color: #999;
   margin-right: 20px;
+}
+
+.BreedSelector .selectContainer {
+  position: relative;
 }
 
 .BreedSelector form select {
@@ -30,6 +38,14 @@ body {
 
 .BreedSelector form select.isError {
   background-color: #999;
+}
+
+.BreedSelector form .selectSpinner {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  top: 7px;
+  right: -24px;
 }
 
 .CatImage {

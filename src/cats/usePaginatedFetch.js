@@ -58,9 +58,16 @@ function usePaginatedFetch(pageSize) {
           page: index,
         },
         { signal: controller.signal }
+        //true, // isSlow
       )
         .then((data) => dispatch({ type: "page-loaded", index, data }))
-        .catch((error) => dispatch({ type: "page-error", index, error }));
+        .catch((error) => {
+          dispatch({ type: "page-error", index, error });
+
+          if (error.name !== "AbortError") {
+            throw error;
+          }
+        });
     },
     [pageSize, controller.signal]
   );
