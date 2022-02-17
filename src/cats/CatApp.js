@@ -1,17 +1,6 @@
-import {
-  useState,
-  useEffect,
-  useCallback,
-  useRef,
-  useReducer,
-  useMemo,
-} from "react";
-import {
-  LoadState,
-  preloadImage,
-  useAsync,
-  useAbortableFetch,
-} from "./utils.js";
+import { useState, useEffect, useCallback, useRef, useReducer } from "react";
+import { preloadImage } from "./utils.js";
+import useAbortableFetch from "./useAbortableFetch.js";
 import getCatsApiFetchParams from "./getCatsApiFetchParams.js";
 import usePaginatedFetch from "./usePaginatedFetch";
 import fetchFromCatsAPI from "./fetchFromCatsAPI.js";
@@ -23,7 +12,7 @@ import "./loadingSpinner.css";
   - toggle in useabortable fetch to cancel in-flights
   - get prefetch working
 
-  - save selectedBreed in localstorage
+  - just pass status down instead of isLoading and isError?
   - use status in app, for fetching (idle, fetching, resolved, error)
   - error state + ErrorBoundary (react-error-boundary?)
   - useContext + useReducer
@@ -231,7 +220,7 @@ function oldCatImageReducer(state, action) {
         areImagesLoading: action.isCurrentPage,
         imagePages: {
           ...state.imagePages,
-          [action.index]: { loadState: LoadState.LOADING, data: [] },
+          [action.index]: { loadState: "loading", data: [] },
         },
       };
 
@@ -241,7 +230,7 @@ function oldCatImageReducer(state, action) {
         areImagesLoading: false,
         imagePages: {
           ...state.imagePages,
-          [action.index]: { loadState: LoadState.LOADED, data: action.json },
+          [action.index]: { loadState: "loaded", data: action.json },
         },
       };
 
