@@ -1,7 +1,7 @@
 import { useReducer, useCallback } from "react";
 
 function asyncReducer(state, action) {
-  console.log("%casync: " + action.type, "color: blue", action);
+  //console.log("%casync: " + action.type, "color: blue", action);
   switch (action.type) {
     case "pending":
       return { status: "pending", data: null, error: null };

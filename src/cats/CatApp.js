@@ -12,6 +12,7 @@ import "./loadingSpinner.css";
   - toggle in useabortable fetch to cancel in-flights
   - get prefetch working
 
+  - should pages be in a ref?
   - just pass status down instead of isLoading and isError?
   - use status in app, for fetching (idle, fetching, resolved, error)
   - error state + ErrorBoundary (react-error-boundary?)
@@ -30,6 +31,7 @@ import "./loadingSpinner.css";
 */
 
 const PAGE_SIZE = 8;
+const PREFETCH_LOOKAHEAD = 3;
 const BREED_ID_KEY = "CatApp-breed-id";
 
 function catAppReducer(state, action) {
@@ -40,7 +42,7 @@ function catAppReducer(state, action) {
       return { ...state, selectedBreedID: action.id };
     }
     case "breeds-loaded":
-      return { ...state, breeds: action.breeds };
+      return { breeds: action.breeds, selectedBreedID: action.selectedBreedID };
     default:
       throw new Error(`Unhandled action type: ${action.type}`);
   }
@@ -49,15 +51,15 @@ function catAppReducer(state, action) {
 function CatApp() {
   const [state, dispatch] = useReducer(catAppReducer, {
     breeds: null,
-    selectedBreedID: window.localStorage.getItem(BREED_ID_KEY) || "all",
+    selectedBreedID: null,
   });
 
   const { status, runFetch } = useAbortableFetch("pending");
-  console.log("Render", status);
+  //console.log("Render", status);
 
   useEffect(() => {
     const { url, options } = getCatsApiFetchParams("/breeds", undefined, 3000);
-    console.log("USE EFFECT", url, options);
+    //console.log("USE EFFECT", url, options);
 
     runFetch(url, options)
       .then(async (response) => {
@@ -70,7 +72,11 @@ function CatApp() {
           json.filter((b) => ({ id: b.id, name: b.name }))
         );
 
-        dispatch({ type: "breeds-loaded", breeds });
+        dispatch({
+          type: "breeds-loaded",
+          breeds,
+          selectedBreedID: window.localStorage.getItem(BREED_ID_KEY) || "all",
+        });
       })
       .catch((error) => {
         // suppress error
@@ -103,16 +109,59 @@ function catImageReducer(state, action) {
   switch (action.type) {
     case "change-index":
       return { ...state, index: state.index + action.increment };
+    case "change-breed":
+      return { index: 0, maxPage: null };
     default:
       throw new Error(`Unhandled action type: ${action.type}`);
   }
 }
 
 function CatImage({ isLoading, isError, selectedBreedID }) {
+  const { pages, status, fetchPage, resetPages } = usePaginatedFetch(PAGE_SIZE);
   const [state, dispatch] = useReducer(catImageReducer, {
-    index: null,
+    index: 0,
     maxPage: null,
   });
+
+  const selectedBreedIDRef = useRef(selectedBreedID);
+  const { index } = state;
+
+  useEffect(() => {
+    const getIndexAndOffset = (i) => {
+      return [Math.floor(i / PAGE_SIZE), i % PAGE_SIZE];
+    };
+
+    if (isLoading || isError || !selectedBreedID) {
+      return;
+    }
+
+    if (selectedBreedIDRef.current !== selectedBreedID) {
+      dispatch({ type: "change-breed", selectedBreedID });
+      selectedBreedIDRef.current = selectedBreedID;
+      resetPages();
+    }
+
+    console.log("Use effect", selectedBreedID, index, pages);
+    const [pageIndex, offset] = getIndexAndOffset(index);
+
+    if (!pages[pageIndex]) {
+      fetchPage(pageIndex);
+    }
+
+    const [prefetchPageIndex] = getIndexAndOffset(index + PREFETCH_LOOKAHEAD);
+
+    if (prefetchPageIndex !== pageIndex && !pages[prefetchPageIndex]) {
+      fetchPage(prefetchPageIndex);
+    }
+  }, [
+    fetchPage,
+    resetPages,
+    index,
+    isError,
+    isLoading,
+    pages,
+    selectedBreedID,
+  ]);
 
   return (
     <div className="CatImage">
@@ -128,9 +177,10 @@ function CatImage({ isLoading, isError, selectedBreedID }) {
           }}
         ></div>
       )} */}
+      {state.index}
       <CatControls
         dispatch={dispatch}
-        isDisabled={false}
+        isDisabled={isLoading || isError}
         canScrollLeft={state.index !== 0}
       />
     </div>
@@ -177,7 +227,7 @@ function BreedSelector({
             disabled={breeds === null || isError}
             onChange={onSelectChange}
             type="select"
-            value={selectedBreedID}
+            value={selectedBreedID || undefined}
           >
             {breeds === null
               ? []

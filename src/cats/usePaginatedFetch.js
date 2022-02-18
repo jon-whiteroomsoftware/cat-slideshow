@@ -6,7 +6,6 @@ function fetchReducer(state, action) {
   switch (action.type) {
     case "fetch-page":
       return {
-        ...state,
         pages: {
           ...state.pages,
           [action.index]: { status: "loading", data: [] },
@@ -14,7 +13,6 @@ function fetchReducer(state, action) {
       };
     case "page-loaded": {
       return {
-        ...state,
         pages: {
           ...state.pages,
           [action.index]: { status: "loaded", data: action.json },
@@ -23,12 +21,14 @@ function fetchReducer(state, action) {
     }
     case "page-error": {
       return {
-        ...state,
         pages: {
           ...state.pages,
           [action.index]: { status: "error", data: [] },
         },
       };
+    }
+    case "reset": {
+      return { pages: {} };
     }
     default:
       throw new Error(`Unhandled action type: ${action.type}`);
@@ -37,14 +37,15 @@ function fetchReducer(state, action) {
 
 function usePaginatedFetch(pageSize) {
   const { current: controller } = useRef(new AbortController());
-  const [state, dispatch] = useReducer(fetchReducer, {
-    pages: {},
-    pageSize,
-  });
+  const [state, dispatch] = useReducer(fetchReducer, { pages: {} });
 
   useEffect(() => {
     return () => controller.abort();
   }, [controller]);
+
+  const resetPages = useCallback(() => {
+    dispatch({ type: "reset" });
+  }, []);
 
   const fetchPage = useCallback(
     (index) => {
@@ -76,7 +77,7 @@ function usePaginatedFetch(pageSize) {
     ? "loading"
     : "idle";
 
-  return { ...state, status, fetchPage };
+  return { ...state, status, fetchPage, resetPages };
 }
 
 export default usePaginatedFetch;
