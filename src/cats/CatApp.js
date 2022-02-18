@@ -128,20 +128,18 @@ function CatImage({ isLoading, isError, selectedBreedID }) {
   console.log("CatImage render", { status, selectedBreedID, index });
 
   useEffect(() => {
+    if (selectedBreedID !== selectedBreedIDRef.current) {
+      selectedBreedIDRef.current = selectedBreedID;
+      resetPages(selectedBreedID);
+      dispatch({ type: "change-breed", selectedBreedID });
+    }
+  }, [resetPages, selectedBreedID]);
+
+  useEffect(() => {
     if (selectedBreedID === null) {
       return;
     }
 
-    if (selectedBreedID !== selectedBreedIDRef.current) {
-      if (selectedBreedIDRef.current !== null) {
-        dispatch({ type: "change-breed", selectedBreedID });
-        resetPages();
-      }
-
-      selectedBreedIDRef.current = selectedBreedID;
-    }
-
-    console.log("Use effect", selectedBreedID, index, pages);
     const getIndexes = (i) => [Math.floor(i / PAGE_SIZE), i % PAGE_SIZE];
     const [pageIndex] = getIndexes(index);
     const [prefetchPageIndex] = getIndexes(index + PREFETCH_LOOKAHEAD);
@@ -150,6 +148,7 @@ function CatImage({ isLoading, isError, selectedBreedID }) {
       const { url, options } = getCatsApiFetchParams(
         "/images/search",
         {
+          breeds: selectedBreedID === "all" ? "" : selectedBreedID,
           limit: PAGE_SIZE,
           order: "ASC",
           page: pageIndex,
@@ -157,7 +156,7 @@ function CatImage({ isLoading, isError, selectedBreedID }) {
         3000
       );
 
-      fetchPage(url, options, pageIndex);
+      fetchPage(url, options, pageIndex, selectedBreedID);
     };
 
     if (!pages[pageIndex]) {
@@ -167,7 +166,7 @@ function CatImage({ isLoading, isError, selectedBreedID }) {
     if (prefetchPageIndex !== pageIndex && !pages[prefetchPageIndex]) {
       doFetchPage(prefetchPageIndex);
     }
-  }, [fetchPage, resetPages, index, selectedBreedID, pages]);
+  }, [fetchPage, index, selectedBreedID, pages]);
 
   return (
     <div className="CatImage">
