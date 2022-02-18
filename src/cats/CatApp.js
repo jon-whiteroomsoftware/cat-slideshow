@@ -128,14 +128,17 @@ function CatImage({ isLoading, isError, selectedBreedID }) {
   console.log("CatImage render", { status, selectedBreedID, index });
 
   useEffect(() => {
-    if (!selectedBreedID) {
+    if (selectedBreedID === null) {
       return;
     }
 
-    if (selectedBreedIDRef.current !== selectedBreedID) {
-      dispatch({ type: "change-breed", selectedBreedID });
+    if (selectedBreedID !== selectedBreedIDRef.current) {
+      if (selectedBreedIDRef.current !== null) {
+        dispatch({ type: "change-breed", selectedBreedID });
+        resetPages();
+      }
+
       selectedBreedIDRef.current = selectedBreedID;
-      resetPages();
     }
 
     console.log("Use effect", selectedBreedID, index, pages);
