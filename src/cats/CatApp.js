@@ -58,7 +58,7 @@ function CatApp() {
   //console.log("Render", status);
 
   useEffect(() => {
-    const { url, options } = getCatsApiFetchParams("/breeds", undefined, 3000);
+    const { url, options } = getCatsApiFetchParams("/breeds", undefined, 1000);
     //console.log("USE EFFECT", url, options);
 
     runFetch(url, options)
@@ -117,21 +117,18 @@ function catImageReducer(state, action) {
 }
 
 function CatImage({ isLoading, isError, selectedBreedID }) {
+  const selectedBreedIDRef = useRef(selectedBreedID);
   const { pages, status, fetchPage, resetPages } = usePaginatedFetch(PAGE_SIZE);
   const [state, dispatch] = useReducer(catImageReducer, {
     index: 0,
     maxPage: null,
   });
 
-  const selectedBreedIDRef = useRef(selectedBreedID);
   const { index } = state;
+  console.log("CatImage render", { status, selectedBreedID, index });
 
   useEffect(() => {
-    const getIndexAndOffset = (i) => {
-      return [Math.floor(i / PAGE_SIZE), i % PAGE_SIZE];
-    };
-
-    if (isLoading || isError || !selectedBreedID) {
+    if (!selectedBreedID) {
       return;
     }
 
@@ -142,26 +139,32 @@ function CatImage({ isLoading, isError, selectedBreedID }) {
     }
 
     console.log("Use effect", selectedBreedID, index, pages);
-    const [pageIndex, offset] = getIndexAndOffset(index);
+    const getIndexes = (i) => [Math.floor(i / PAGE_SIZE), i % PAGE_SIZE];
+    const [pageIndex] = getIndexes(index);
+    const [prefetchPageIndex] = getIndexes(index + PREFETCH_LOOKAHEAD);
+
+    const doFetchPage = (pageIndex) => {
+      const { url, options } = getCatsApiFetchParams(
+        "/images/search",
+        {
+          limit: PAGE_SIZE,
+          order: "ASC",
+          page: pageIndex,
+        },
+        3000
+      );
+
+      fetchPage(url, options, pageIndex);
+    };
 
     if (!pages[pageIndex]) {
-      fetchPage(pageIndex);
+      doFetchPage(pageIndex);
     }
-
-    const [prefetchPageIndex] = getIndexAndOffset(index + PREFETCH_LOOKAHEAD);
 
     if (prefetchPageIndex !== pageIndex && !pages[prefetchPageIndex]) {
-      fetchPage(prefetchPageIndex);
+      doFetchPage(prefetchPageIndex);
     }
-  }, [
-    fetchPage,
-    resetPages,
-    index,
-    isError,
-    isLoading,
-    pages,
-    selectedBreedID,
-  ]);
+  }, [fetchPage, resetPages, index, selectedBreedID, pages]);
 
   return (
     <div className="CatImage">

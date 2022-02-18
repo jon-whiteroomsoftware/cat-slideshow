@@ -6,6 +6,11 @@ function useAbortableFetch(initialStatus) {
   const { status, data, error, run: asyncRun, abort: asyncAbort } = state;
   const { current: controller } = useRef(new AbortController());
 
+  const abort = useCallback(() => {
+    controller.abort();
+    asyncAbort();
+  }, [asyncAbort, controller]);
+
   const runFetch = useCallback(
     (url, options) => {
       if (!url) {
@@ -30,17 +35,14 @@ function useAbortableFetch(initialStatus) {
       asyncRun(promise);
       return promise;
     },
-    [asyncRun, controller.signal]
+    [controller.signal, asyncRun]
   );
 
   useEffect(() => {
-    return () => {
-      controller.abort();
-      asyncAbort();
-    };
-  }, [asyncAbort, controller]);
+    return () => abort();
+  }, [abort]);
 
-  return { response: data, status, error, runFetch };
+  return { response: data, status, error, runFetch, abort };
 }
 
 export default useAbortableFetch;

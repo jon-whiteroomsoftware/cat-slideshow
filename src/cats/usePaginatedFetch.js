@@ -1,4 +1,5 @@
 import { useEffect, useCallback, useReducer, useRef } from "react";
+import useAbortableFetch from "./useAbortableFetch";
 import fetchFromCatsAPI from "./fetchFromCatsAPI";
 
 function fetchReducer(state, action) {
@@ -15,7 +16,7 @@ function fetchReducer(state, action) {
       return {
         pages: {
           ...state.pages,
-          [action.index]: { status: "loaded", data: action.json },
+          [action.index]: { status: "loaded", data: action.data },
         },
       };
     }
@@ -35,42 +36,45 @@ function fetchReducer(state, action) {
   }
 }
 
-function usePaginatedFetch(pageSize) {
-  const { current: controller } = useRef(new AbortController());
-  const [state, dispatch] = useReducer(fetchReducer, { pages: {} });
+// TODO
+// overlapping fetches
+// abort - unmount, changing breeds
+// stale responses
 
-  useEffect(() => {
-    return () => controller.abort();
-  }, [controller]);
+function usePaginatedFetch(pageSize) {
+  const [state, dispatch] = useReducer(fetchReducer, { pages: {} });
+  const {
+    status: fetchStatus,
+    runFetch,
+    abort: abortFetch,
+  } = useAbortableFetch("pending", true);
+
+  // useEffect(() => {
+  //   return () => controller.abort();
+  // }, [controller]);
 
   const resetPages = useCallback(() => {
     dispatch({ type: "reset" });
+    //abortFetch();
   }, []);
 
   const fetchPage = useCallback(
-    (index) => {
+    (url, options, index) => {
       dispatch({ type: "fetch-page", index });
 
-      fetchFromCatsAPI(
-        "/images/search",
-        {
-          limit: pageSize,
-          order: "ASC",
-          page: index,
-        },
-        { signal: controller.signal }
-        //true, // isSlow
-      )
-        .then((data) => dispatch({ type: "page-loaded", index, data }))
+      return runFetch(url, options)
+        .then(async (response) => {
+          if (!response || !response.ok) {
+            throw new Error("API call failed");
+          }
+          const json = await response.json();
+          dispatch({ type: "page-loaded", index, data: json });
+        })
         .catch((error) => {
           dispatch({ type: "page-error", index, error });
-
-          if (error.name !== "AbortError") {
-            throw error;
-          }
         });
     },
-    [pageSize, controller.signal]
+    [runFetch]
   );
 
   const status = Object.values(state.pages).find((d) => d.status === "loading")
