@@ -1,6 +1,5 @@
-import { useEffect, useCallback, useReducer, useRef } from "react";
+import { useCallback, useReducer } from "react";
 import useAbortableFetch from "./useAbortableFetch";
-import fetchFromCatsAPI from "./fetchFromCatsAPI";
 
 function fetchReducer(state, action) {
   console.log("%cfetchReducer: " + action.type, "color: blue", action);
@@ -25,10 +24,10 @@ function fetchReducer(state, action) {
 
   switch (action.type) {
     case "fetch-page":
-      return updateStateForPage({ status: "loading", data: [] });
+      return updateStateForPage({ status: "pending", data: [] });
 
     case "page-loaded":
-      return updateStateForPage({ status: "loaded", data: action.data });
+      return updateStateForPage({ status: "resolved", data: action.data });
 
     case "page-error":
       return updateStateForPage({ status: "error", data: [] });
@@ -37,9 +36,6 @@ function fetchReducer(state, action) {
       throw new Error(`Unhandled action type: ${action.type}`);
   }
 }
-
-// TODO
-// abort - unmount
 
 function usePaginatedFetch(pageSize) {
   const [state, dispatch] = useReducer(fetchReducer, { pages: {}, key: null });
@@ -63,11 +59,10 @@ function usePaginatedFetch(pageSize) {
 
       return runFetch(url, options)
         .then(async (response) => {
-          if (!response || !response.ok) {
-            throw new Error("API call failed");
+          if (response && response.ok) {
+            const json = await response.json();
+            dispatch({ type: "page-loaded", url, index, data: json, key });
           }
-          const json = await response.json();
-          dispatch({ type: "page-loaded", url, index, data: json, key });
         })
         .catch((error) => {
           dispatch({ type: "page-error", url, index, error, key });
@@ -76,10 +71,7 @@ function usePaginatedFetch(pageSize) {
     [runFetch]
   );
 
-  const status = Object.values(state.pages).find((d) => d.status === "loading")
-    ? "loading"
-    : "idle";
-
+  const status = fetchStatus === "pending" ? "pending" : "idle";
   return { ...state, status, fetchPage, resetPages };
 }
 

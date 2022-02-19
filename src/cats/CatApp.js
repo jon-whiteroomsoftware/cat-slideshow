@@ -9,14 +9,11 @@ import "./loadingSpinner.css";
 
 /*
 3) image slider with timer between each image
-  - toggle in useabortable fetch to cancel in-flights
-  - get prefetch working
-
-  - should pages be in a ref?
   - just pass status down instead of isLoading and isError?
   - use status in app, for fetching (idle, fetching, resolved, error)
   - error state + ErrorBoundary (react-error-boundary?)
   - useContext + useReducer
+  - use vh for sizing?
   - focus select
   - useMemo and check rendering
   - count renders
@@ -27,6 +24,7 @@ import "./loadingSpinner.css";
   - debounce (until the user stops doing things);
   - useContext, useCallback, useMemo
   - transition images off and onto screen (refs and useLayoutEffect?)
+  - have another screen with typedown search
   - fetch code:
 */
 
@@ -55,7 +53,7 @@ function CatApp() {
   });
 
   const { status, runFetch } = useAbortableFetch("pending");
-  //console.log("Render", status);
+  console.log("Render Catapp", status);
 
   useEffect(() => {
     const { url, options } = getCatsApiFetchParams("/breeds", undefined, 1000);
@@ -107,10 +105,14 @@ function CatApp() {
 function catImageReducer(state, action) {
   console.log("%ccatimage: " + action.type, "color: orange", action);
   switch (action.type) {
-    case "change-index":
-      return { ...state, index: state.index + action.increment };
     case "change-breed":
-      return { index: 0, maxPage: null };
+      return { ...state, index: 0, maxPage: null };
+    case "change-index":
+      return {
+        ...state,
+        isIndexChanging: true,
+        nextIndex: Math.max(0, (state.index || 0) + action.increment),
+      };
     default:
       throw new Error(`Unhandled action type: ${action.type}`);
   }
@@ -120,8 +122,10 @@ function CatImage({ isLoading, isError, selectedBreedID }) {
   const selectedBreedIDRef = useRef(selectedBreedID);
   const { pages, status, fetchPage, resetPages } = usePaginatedFetch(PAGE_SIZE);
   const [state, dispatch] = useReducer(catImageReducer, {
-    index: 0,
+    index: null,
     maxPage: null,
+    isIndexChanging: false,
+    nextIndex: null,
   });
 
   const { index } = state;
@@ -140,9 +144,9 @@ function CatImage({ isLoading, isError, selectedBreedID }) {
       return;
     }
 
-    const getIndexes = (i) => [Math.floor(i / PAGE_SIZE), i % PAGE_SIZE];
-    const [pageIndex] = getIndexes(index);
-    const [prefetchPageIndex] = getIndexes(index + PREFETCH_LOOKAHEAD);
+    const getPageIndex = (i) => Math.floor(i / PAGE_SIZE);
+    const pageIndex = getPageIndex(index);
+    const prefetchPageIndex = getPageIndex(index + PREFETCH_LOOKAHEAD);
 
     const doFetchPage = (pageIndex) => {
       const { url, options } = getCatsApiFetchParams(
@@ -156,7 +160,12 @@ function CatImage({ isLoading, isError, selectedBreedID }) {
         3000
       );
 
-      fetchPage(url, options, pageIndex, selectedBreedID);
+      fetchPage(url, options, pageIndex, selectedBreedID).then(() => {
+        // anytime we were waiting for this page to load (to show index)
+        if (index === null) {
+          dispatch({ type: "change-index", increment: 0 });
+        }
+      });
     };
 
     if (!pages[pageIndex]) {
@@ -168,21 +177,57 @@ function CatImage({ isLoading, isError, selectedBreedID }) {
     }
   }, [fetchPage, index, selectedBreedID, pages]);
 
+  useEffect(() => {
+    const pageIndex = Math.floor(state.nextIndex / PAGE_SIZE);
+    const offset = state.nextIndex % PAGE_SIZE;
+    const url = pages?.[pageIndex]?.[offset]?.url;
+
+    console.log("index is changing", state.nextIndex, url);
+  }, [pages, state.isIndexChanging, state.nextIndex]);
+
+  /*
+      const imageURL = (index) => {
+        const { pageIndex, pageOffset } = imageIndex(index);
+        const imagePage = state.imagePages[pageIndex];
+        return imagePage ? imagePage.data[pageOffset]?.url : null;
+      };
+
+      dispatch({ type: "index-changing" });
+      const url = imageURL(newIndex);
+
+      if (url !== null) {
+        console.log("URL immediate", url);
+        dispatch({ type: "index-changed", index: newIndex });
+        return;
+      }
+
+      preloadImage(url).then(() => {
+        console.log("URL prefetched", url);
+        dispatch({ type: "index-changed", index: newIndex });
+      });
+*/
+
   return (
     <div className="CatImage">
-      {/* {isError ? (
-        <div className="message">An error has occurred</div>
-      ) : isLoading ? (
-        <div className="message">loading...</div>
-      ) : (
-        <div
-          className={`image ${state.isIndexChanging ? "nextLoading" : ""}`}
-          style={{
-            backgroundImage: `url(${url})`,
-          }}
-        ></div>
-      )} */}
-      {state.index}
+      <div className="mainContainer">
+        {isError ? (
+          <div className="messageContainer">
+            <span className="message">An error has occurred</span>
+          </div>
+        ) : isLoading || status === "pending" ? (
+          <div className="messageContainer">
+            <span className="message">loading...</span>
+          </div>
+        ) : (
+          <div>{state.index}</div>
+          // <div
+          //   className={`image ${state.isIndexChanging ? "nextLoading" : ""}`}
+          //   style={{
+          //     backgroundImage: `url(${url})`,
+          //   }}
+          // ></div>
+        )}
+      </div>
       <CatControls
         dispatch={dispatch}
         isDisabled={isLoading || isError}
@@ -322,47 +367,6 @@ function CatImageOld({ isBreedsError, selectedBreedID }) {
     pageOffset: index % PAGE_SIZE,
   });
 
-  useEffect(() => {
-    if (selectedBreedID !== null) {
-      dispatch({ type: "change-breed" });
-    }
-  }, [selectedBreedID]);
-
-  useEffect(() => {
-    if (state.index === null) {
-      return;
-    }
-
-    const fetchPage = async (pageIndex) => {
-      try {
-        let { json } = await fetchFromCatsAPI("/images/search", {
-          limit: PAGE_SIZE,
-          order: "ASC",
-          page: pageIndex,
-          selectedBreedID,
-        });
-        dispatch({ type: "page-loaded", index: pageIndex, json });
-      } catch (error) {
-        console.log("Fetch error", { pageIndex, selectedBreedID });
-      }
-    };
-
-    // do we have the image URLs for this index?
-    const { pageIndex } = imageIndex(state.index);
-
-    if (!state.imagePages[pageIndex]) {
-      dispatch({ type: "fetch-page", index: pageIndex, isCurrentPage: true });
-      fetchPage(pageIndex);
-    }
-
-    const prefetchIndex = imageIndex(state.index + FETCH_BOUNDARY);
-
-    if (!state.imagePages[prefetchIndex.pageIndex]) {
-      dispatch({ type: "fetch-page", index: prefetchIndex.pageIndex });
-      fetchPage(prefetchIndex.pageIndex);
-    }
-  }, [state.index, selectedBreedID, state.imagePages]);
-
   const onButtonClick = useCallback(
     (value) => {
       const imageURL = (index) => {
@@ -431,55 +435,3 @@ function CatImageOld({ isBreedsError, selectedBreedID }) {
 }
 
 export default CatApp;
-
-/*
-function CatImg(props) {
-  const [index, setIndex] = useState(0);
-  const { pages, status, fetchPage } = usePaginatedFetch(PAGE_SIZE);
-
-  useEffect(() => {
-    const pageIndex = Math.floor(index / PAGE_SIZE);
-    const offset = index % PAGE_SIZE;
-    console.log("USE EFFECT", index, pageIndex);
-
-    if (!pages[pageIndex]) {
-      fetchPage(pageIndex);
-    }
-  }, [index, pages, fetchPage]);
-
-  function onButtonClick(val) {
-    setIndex(index + val);
-  }
-
-  return (
-    <div>
-      <button onClick={() => onButtonClick(-1)}>&lt;</button>
-      <button onClick={() => onButtonClick(1)}>&gt;</button>
-      <br />
-      {`CatImg index: ${index} - Status: ${status}`}
-    </div>
-  );
-}
-
-function Scopy(props) {
-  const { current: options } = useRef({
-    headers: { "x-api-key": API_KEY },
-  });
-  const { status, data, error, abort } = useAbortableFetch(props.url, options);
-
-  function onButtonClick() {
-    console.log("ABORT");
-    abort();
-  }
-
-  return (
-    <div>
-      <button onClick={onButtonClick}>Abort</button>
-      <br />
-      SCOPY
-    </div>
-  );
-}
-
-
-*/

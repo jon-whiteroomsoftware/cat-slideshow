@@ -5,7 +5,6 @@ function useAbortableFetch(initialStatus) {
   const state = useAsync(initialStatus);
   const { status, data, error, run: asyncRun, abort: asyncAbort } = state;
   const controllerRef = useRef(new AbortController());
-  //const { current: controller } = useRef(new AbortController());
 
   const abort = useCallback(() => {
     controllerRef.current.abort();
