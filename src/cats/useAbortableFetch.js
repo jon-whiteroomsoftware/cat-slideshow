@@ -46,7 +46,13 @@ function useAbortableFetch(initialStatus) {
     return () => abort();
   }, [abort]);
 
-  return { response: data, status, error, runFetch, abort };
+  return {
+    response: data,
+    status: status,
+    error,
+    runFetch,
+    abort,
+  };
 }
 
 export default useAbortableFetch;

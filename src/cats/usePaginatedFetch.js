@@ -24,10 +24,10 @@ function fetchReducer(state, action) {
 
   switch (action.type) {
     case "fetch-page":
-      return updateStateForPage({ status: "pending", data: [] });
+      return updateStateForPage({ status: "loading", data: [] });
 
     case "page-loaded":
-      return updateStateForPage({ status: "resolved", data: action.data });
+      return updateStateForPage({ status: "loaded", data: action.data });
 
     case "page-error":
       return updateStateForPage({ status: "error", data: [] });
@@ -43,7 +43,7 @@ function usePaginatedFetch(pageSize) {
     status: fetchStatus,
     runFetch,
     abort: abortFetch,
-  } = useAbortableFetch("pending", true);
+  } = useAbortableFetch("loading", true);
 
   const resetPages = useCallback(
     (key) => {
@@ -71,7 +71,7 @@ function usePaginatedFetch(pageSize) {
     [runFetch]
   );
 
-  const status = fetchStatus === "pending" ? "pending" : "idle";
+  const status = fetchStatus === "loading" ? "loading" : "idle";
   return { ...state, status, fetchPage, resetPages };
 }
 

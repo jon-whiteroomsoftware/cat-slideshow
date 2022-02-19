@@ -1,14 +1,16 @@
 import { useState, useEffect, useCallback, useRef, useReducer } from "react";
+import { clsx } from "clsx";
 import { preloadImage } from "./utils.js";
 import useAbortableFetch from "./useAbortableFetch.js";
 import getCatsApiFetchParams from "./getCatsApiFetchParams.js";
 import usePaginatedFetch from "./usePaginatedFetch";
-import fetchFromCatsAPI from "./fetchFromCatsAPI.js";
 import "./CatApp.css";
 import "./loadingSpinner.css";
 
 /*
 3) image slider with timer between each image
+  - dont render CatImage until it's ready
+
   - just pass status down instead of isLoading and isError?
   - use status in app, for fetching (idle, fetching, resolved, error)
   - error state + ErrorBoundary (react-error-boundary?)
@@ -47,17 +49,14 @@ function catAppReducer(state, action) {
 }
 
 function CatApp() {
+  const { status, runFetch } = useAbortableFetch("loading");
   const [state, dispatch] = useReducer(catAppReducer, {
     breeds: null,
     selectedBreedID: null,
   });
 
-  const { status, runFetch } = useAbortableFetch("pending");
-  console.log("Render Catapp", status);
-
   useEffect(() => {
     const { url, options } = getCatsApiFetchParams("/breeds", undefined, 1000);
-    //console.log("USE EFFECT", url, options);
 
     runFetch(url, options)
       .then(async (response) => {
@@ -81,28 +80,32 @@ function CatApp() {
       });
   }, [runFetch]);
 
-  const isLoading = status === "pending";
-  const isError = status === "rejected";
-
   return (
     <div className="CatApp">
       <BreedSelector
         dispatch={dispatch}
         breeds={state.breeds}
         selectedBreedID={state.selectedBreedID}
-        isLoading={isLoading}
-        isError={isError}
+        status={status}
       />
-      <CatImage
-        isLoading={isLoading}
-        isError={isError}
-        selectedBreedID={state.selectedBreedID}
-      />
+      {status === "loading" ? (
+        <>
+          <MessageScreen>loading...</MessageScreen>
+          <CatControls isDisabled={true} />
+        </>
+      ) : status === "error" ? (
+        <>
+          <MessageScreen className="error">an error has occurred</MessageScreen>
+          <CatControls isDisabled={true} />
+        </>
+      ) : (
+        <CatSlideshow selectedBreedID={state.selectedBreedID} />
+      )}
     </div>
   );
 }
 
-function catImageReducer(state, action) {
+function catSlideshowReducer(state, action) {
   console.log("%ccatimage: " + action.type, "color: orange", action);
   switch (action.type) {
     case "change-breed":
@@ -118,10 +121,10 @@ function catImageReducer(state, action) {
   }
 }
 
-function CatImage({ isLoading, isError, selectedBreedID }) {
+function CatSlideshow({ selectedBreedID }) {
   const selectedBreedIDRef = useRef(selectedBreedID);
   const { pages, status, fetchPage, resetPages } = usePaginatedFetch(PAGE_SIZE);
-  const [state, dispatch] = useReducer(catImageReducer, {
+  const [state, dispatch] = useReducer(catSlideshowReducer, {
     index: null,
     maxPage: null,
     isIndexChanging: false,
@@ -129,7 +132,7 @@ function CatImage({ isLoading, isError, selectedBreedID }) {
   });
 
   const { index } = state;
-  console.log("CatImage render", { status, selectedBreedID, index });
+  console.log("CatSlideshow render", { status, selectedBreedID, index });
 
   useEffect(() => {
     if (selectedBreedID !== selectedBreedIDRef.current) {
@@ -208,31 +211,17 @@ function CatImage({ isLoading, isError, selectedBreedID }) {
 */
 
   return (
-    <div className="CatImage">
+    <div className="CatSlideshow">
       <div className="mainContainer">
-        {isError ? (
-          <div className="messageContainer">
-            <span className="message">An error has occurred</span>
-          </div>
-        ) : isLoading || status === "pending" ? (
-          <div className="messageContainer">
-            <span className="message">loading...</span>
-          </div>
-        ) : (
-          <div>{state.index}</div>
-          // <div
-          //   className={`image ${state.isIndexChanging ? "nextLoading" : ""}`}
-          //   style={{
-          //     backgroundImage: `url(${url})`,
-          //   }}
-          // ></div>
-        )}
+        <div>{state.index}</div>
+        {/* // <div
+        //   className={`image ${state.isIndexChanging ? "nextLoading" : ""}`}
+        //   style={{
+        //     backgroundImage: `url(${url})`,
+        //   }}
+        // ></div> */}
       </div>
-      <CatControls
-        dispatch={dispatch}
-        isDisabled={isLoading || isError}
-        canScrollLeft={state.index !== 0}
-      />
+      <CatControls dispatch={dispatch} canScrollLeft={state.index !== 0} />
     </div>
   );
 }
@@ -256,13 +245,7 @@ function CatControls({ dispatch, isDisabled, canScrollLeft }) {
   );
 }
 
-function BreedSelector({
-  dispatch,
-  breeds,
-  selectedBreedID,
-  isLoading,
-  isError,
-}) {
+function BreedSelector({ dispatch, breeds, selectedBreedID, status }) {
   function onSelectChange(e) {
     dispatch({ type: "select-breed", id: e.target.value });
   }
@@ -273,8 +256,8 @@ function BreedSelector({
         <label>Breed</label>
         <span className="selectContainer">
           <select
-            className={isError ? "isError" : ""}
-            disabled={breeds === null || isError}
+            className={status === "error" ? "isError" : ""}
+            disabled={breeds === null || status === "error"}
             onChange={onSelectChange}
             type="select"
             value={selectedBreedID || undefined}
@@ -287,13 +270,21 @@ function BreedSelector({
                   </option>
                 ))}
           </select>
-          {isLoading && (
+          {status === "loading" && (
             <div className="selectSpinner">
               <div className="loadingSpinnerExtraSmall"></div>
             </div>
           )}
         </span>
       </form>
+    </div>
+  );
+}
+
+function MessageScreen({ className, children }) {
+  return (
+    <div className={`MessageScreen ${className}`}>
+      <span className="message">{children}</span>
     </div>
   );
 }
@@ -353,7 +344,7 @@ function oldCatImageReducer(state, action) {
 }
 
 function CatImageOld({ isBreedsError, selectedBreedID }) {
-  const [state, dispatch] = useReducer(catImageReducer, {
+  const [state, dispatch] = useReducer(catSlideshowReducer, {
     imagePages: {},
     index: null,
     maxPage: null,
