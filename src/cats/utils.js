@@ -19,4 +19,4 @@ function preloadImage(url) {
   });
 }
 
-export { makeEnumObject, preloadImage };
+export { wait, makeEnumObject, preloadImage };

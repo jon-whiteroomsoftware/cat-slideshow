@@ -9,14 +9,14 @@ body {
   max-width: 500px;
 }
 
-.MessageScreen {
+.MessageCard {
   height: 300px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.MessageScreen .message {
+.MessageCard .message {
   background-color: #999;
   border-radius: 8px;
   color: white;
@@ -24,7 +24,7 @@ body {
   padding: 6px 16px;
 }
 
-.MessageScreen.error .message {
+.MessageCard.error .message {
   background-color: #9e4646;
 }
 
