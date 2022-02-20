@@ -13,25 +13,17 @@ import "./CatApp.css";
 
 /*
 3) image slider with timer between each image
-  - dont render CatImage until it's ready
 
-  - just pass status down instead of isLoading and isError?
-  - use status in app, for fetching (idle, fetching, resolved, error)
   - error state + ErrorBoundary (react-error-boundary?)
-  - useContext + useReducer
   - use vh for sizing?
-  - focus select
   - useMemo and check rendering
   - count renders
   - timer to change image
-  - can rewind past zero?
   - countdown should reset for each image
-  - allow quick button clicking
-  - debounce (until the user stops doing things);
   - useContext, useCallback, useMemo
   - transition images off and onto screen (refs and useLayoutEffect?)
+    - fade in/out?
   - have another screen with typedown search
-  - fetch code:
 */
 
 const BREED_ID_KEY = "CatApp-breed-id";

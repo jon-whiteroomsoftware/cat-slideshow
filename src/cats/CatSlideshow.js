@@ -3,11 +3,11 @@ import { preloadImage } from "./utils.js";
 import getCatsApiFetchParams from "./getCatsApiFetchParams.js";
 import usePaginatedFetch from "./usePaginatedFetch";
 import CatSlideshowControls from "./CatSlideshowControls.js";
-import MessageCard from "./MessageCard.js";
 import LoadingCard from "./LoadingCard.js";
 
 const PAGE_SIZE = 20;
-const PAGE_PREFETCH = 3;
+const PAGE_PREFETCH = 8;
+const MAX_IMAGE_PREFETCH = 2;
 
 function fetchPageFromCatsApi(pageIndex, selectedBreedID, fetchPage) {
   const { url, options } = getCatsApiFetchParams(
@@ -114,38 +114,38 @@ function CatSlideshow({ selectedBreedID }) {
   }, [index, pages, selectedBreedID, fetchPage]);
 
   useEffect(() => {
-    const MAX_PREFETCH = 2;
     const statusMap = imageStatusMapRef.current;
-    let prefetchCount = 0;
 
-    for (let i = index; i < index + MAX_PREFETCH + 1; i++) {
+    for (let i = index; i < index + MAX_IMAGE_PREFETCH + 1; i++) {
       if (!statusMap.has(i)) {
         statusMap.set(i, "wait");
       }
     }
 
-    for (let [i, status] of statusMap.entries()) {
-      if (status === "ready") {
-        if (index !== visibleIndex && i === index) {
-          dispatch({ type: "image-ready", index: i });
-        }
-      } else if (status === "prefetch") {
-        ++prefetchCount;
-      } else if (status === "wait") {
-        const url = getImageURL(pages, i);
+    if (index !== visibleIndex && statusMap.get(index) === "ready") {
+      dispatch({ type: "image-ready", index });
+    }
 
-        if (url && prefetchCount++ < MAX_PREFETCH) {
-          statusMap.set(i, "prefetch");
+    let prefetchCount = [...statusMap.values()].filter(
+      (s) => s === "prefetch"
+    ).length;
 
-          preloadImage(url).then(() => {
-            statusMap.set(i, "ready");
-
-            if (index !== visibleIndex && i === index) {
-              dispatch({ type: "image-ready", index: i });
-            }
-          });
-        }
-      }
+    if (prefetchCount < MAX_IMAGE_PREFETCH) {
+      [...statusMap.keys()]
+        .filter((i) => statusMap.get(i) === "wait")
+        .slice(0, MAX_IMAGE_PREFETCH - prefetchCount)
+        .forEach((i) => {
+          const url = getImageURL(pages, i);
+          if (url) {
+            statusMap.set(i, "prefetch");
+            preloadImage(url).then(() => {
+              statusMap.set(i, "ready");
+              if (index !== visibleIndex && i === index) {
+                dispatch({ type: "image-ready", index: i });
+              }
+            });
+          }
+        });
     }
   }, [pages, index, visibleIndex]);
 
