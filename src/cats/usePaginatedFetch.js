@@ -37,17 +37,16 @@ function fetchReducer(state, action) {
   }
 }
 
-function usePaginatedFetch(pageSize) {
+function usePaginatedFetch(pageSize, initialStatus = "idle") {
   const [state, dispatch] = useReducer(fetchReducer, { pages: {}, key: null });
   const {
     status: fetchStatus,
     runFetch,
     abort: abortFetch,
-  } = useAbortableFetch("loading", true);
+  } = useAbortableFetch(initialStatus);
 
   const resetPages = useCallback(
     (key) => {
-      console.log("RESET PAGES");
       abortFetch();
       dispatch({ type: "reset", key });
     },

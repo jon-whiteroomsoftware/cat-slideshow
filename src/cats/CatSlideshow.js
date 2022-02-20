@@ -3,17 +3,10 @@ import { preloadImage } from "./utils.js";
 import getCatsApiFetchParams from "./getCatsApiFetchParams.js";
 import usePaginatedFetch from "./usePaginatedFetch";
 import CatSlideshowControls from "./CatSlideshowControls.js";
+import MessageCard from "./MessageCard.js";
+import LoadingCard from "./LoadingCard.js";
 
-/*
-  TODO:
-
-  - apply class to image when visbileImage is waiting to change
-  - don't process entire statusMap
-  - check number of image-ready actions fired
-
-*/
-
-const PAGE_SIZE = 8;
+const PAGE_SIZE = 20;
 const PAGE_PREFETCH = 3;
 
 function fetchPageFromCatsApi(pageIndex, selectedBreedID, fetchPage) {
@@ -25,7 +18,7 @@ function fetchPageFromCatsApi(pageIndex, selectedBreedID, fetchPage) {
       order: "ASC",
       page: pageIndex,
     },
-    1500
+    undefined //1000
   );
 
   fetchPage(url, options, pageIndex, selectedBreedID);
@@ -82,7 +75,10 @@ function catSlideshowReducer(state, action) {
 }
 
 function CatSlideshow({ selectedBreedID }) {
-  const { pages, fetchPage, resetPages } = usePaginatedFetch(PAGE_SIZE);
+  const { pages, fetchPage, resetPages } = usePaginatedFetch(
+    PAGE_SIZE,
+    "loading"
+  );
   const imageStatusMapRef = useRef(new Map());
 
   const [state, dispatch] = useReducer(
@@ -151,23 +147,25 @@ function CatSlideshow({ selectedBreedID }) {
         }
       }
     }
-
-    console.log("NEW STATUS MAP", statusMap);
   }, [pages, index, visibleIndex]);
-
-  const url = visibleIndex !== null ? getImageURL(pages, visibleIndex) : null;
-  console.log("URL", { index, visibleIndex, url });
 
   return (
     <div className="CatSlideshow">
-      <div className="mainContainer">
-        <div
-          className="image"
-          style={{
-            backgroundImage: url ? `url(${url})` : "none",
-          }}
-        ></div>
-      </div>
+      {visibleIndex === null ? (
+        <LoadingCard />
+      ) : (
+        <div className="mainContainer">
+          <>
+            <div
+              className="image"
+              style={{
+                backgroundImage: `url(${getImageURL(pages, visibleIndex)})`,
+              }}
+            ></div>
+            {visibleIndex !== index && <LoadingCard className="imageOverlay" />}
+          </>
+        </div>
+      )}
       <CatSlideshowControls
         dispatch={dispatch}
         canScrollLeft={state.index !== 0}

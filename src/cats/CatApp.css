@@ -9,11 +9,16 @@ body {
   max-width: 500px;
 }
 
-.MessageCard {
+.MessageCard,
+.LoadingCard {
   height: 300px;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.LoadingCard {
+  background-color: rgba(255, 255, 255, 0.4);
 }
 
 .MessageCard .message {
@@ -59,13 +64,13 @@ body {
   background-color: #ccc;
 }
 
-.BreedSelector form .selectSpinner {
+/* .BreedSelector form .selectSpinner {
   position: absolute;
   width: 12px;
   height: 12px;
   top: 7px;
   right: -24px;
-}
+} */
 
 .CatSlideshow {
   height: 360px;
@@ -73,11 +78,19 @@ body {
 
 .CatSlideshow .mainContainer {
   height: 300px;
+  position: relative;
 }
 
 .CatSlideshow .image {
   background-size: cover;
   height: 300px;
+}
+
+.CatSlideshow .mainContainer .imageOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
 }
 
 .CatSlideshow .image.nextLoading {
@@ -103,12 +116,12 @@ body {
 }
 
 .CatControls button:active {
-  background-color: #aaa;
+  background-color: #ccc;
   color: #fff;
   top: 2px;
   left: 2px;
 }
 
 .CatControls button:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
 }

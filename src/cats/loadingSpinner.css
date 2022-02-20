@@ -7,7 +7,8 @@
   }
 }
 
-.loadingSpinnerExtraSmall {
+.loadingSpinnerExtraSmall,
+.loadingSpinnerLarge {
   height: 12px;
   width: 12px;
   opacity: 1;
@@ -15,7 +16,8 @@
   transition: opacity linear 0.5s;
 }
 
-.loadingSpinnerExtraSmall::before {
+.loadingSpinnerExtraSmall::before,
+.loadingSpinnerLarge::before {
   animation: 0.5s linear infinite spinner;
   border: solid 3px #eee;
   border-bottom-color: #ccc;
@@ -30,4 +32,14 @@
   transform-origin: center;
   width: 16px;
   will-change: transform;
+}
+
+.loadingSpinnerLarge {
+  height: 32px;
+  width: 32px;
+}
+
+.loadingSpinnerLarge::before {
+  height: 32px;
+  width: 32px;
 }

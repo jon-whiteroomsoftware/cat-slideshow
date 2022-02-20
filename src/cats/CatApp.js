@@ -8,8 +8,8 @@ import CatSlideshow from "./CatSlideshow.js";
 import CatSlideshowControls from "./CatSlideshowControls.js";
 import BreedSelector from "./BreedSelector.js";
 import MessageCard from "./MessageCard.js";
+import LoadingCard from "./LoadingCard.js";
 import "./CatApp.css";
-import "./loadingSpinner.css";
 
 /*
 3) image slider with timer between each image
@@ -92,7 +92,7 @@ function CatApp() {
       />
       {loadStatus === "loading" || state.selectedBreedID === null ? (
         <>
-          <MessageCard>loading...</MessageCard>
+          <LoadingCard />
           <CatSlideshowControls isDisabled={true} />
         </>
       ) : loadStatus === "error" ? (

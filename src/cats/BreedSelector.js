@@ -23,11 +23,6 @@ function BreedSelector({ dispatch, breeds, selectedBreedID, status }) {
                   </option>
                 ))}
           </select>
-          {status === "loading" && (
-            <div className="selectSpinner">
-              <div className="loadingSpinnerExtraSmall"></div>
-            </div>
-          )}
         </span>
       </form>
     </div>
