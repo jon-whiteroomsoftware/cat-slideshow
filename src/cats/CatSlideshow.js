@@ -4,49 +4,86 @@ import getCatsApiFetchParams from "./getCatsApiFetchParams.js";
 import usePaginatedFetch from "./usePaginatedFetch";
 import CatSlideshowControls from "./CatSlideshowControls.js";
 
+/*
+  TODO:
+
+  - apply class to image when visbileImage is waiting to change
+  - don't process entire statusMap
+  - check number of image-ready actions fired
+
+*/
+
 const PAGE_SIZE = 8;
-const PREFETCH_LOOKAHEAD = 3;
+const PAGE_PREFETCH = 3;
+
+function fetchPageFromCatsApi(pageIndex, selectedBreedID, fetchPage) {
+  const { url, options } = getCatsApiFetchParams(
+    "/images/search",
+    {
+      breeds: selectedBreedID === "all" ? "" : selectedBreedID,
+      limit: PAGE_SIZE,
+      order: "ASC",
+      page: pageIndex,
+    },
+    1500
+  );
+
+  fetchPage(url, options, pageIndex, selectedBreedID);
+}
+
+function getPageIndex(index) {
+  return Math.floor(index / PAGE_SIZE);
+}
+
+function getPageIndexAndOffset(index) {
+  return [getPageIndex(index), index % PAGE_SIZE];
+}
+
+function getImageURL(pages, index) {
+  const pageIndex = getPageIndex(index);
+  const offset = index % PAGE_SIZE;
+  return pages?.[pageIndex]?.data?.[offset]?.url;
+}
 
 function initCatSlideshowState() {
-  return { index: 0, isIndexChanging: true };
-}
-
-function getSearchApiParams(selectedBreedID, pageIndex) {
   return {
-    breeds: selectedBreedID === "all" ? "" : selectedBreedID,
-    limit: PAGE_SIZE,
-    order: "ASC",
-    page: pageIndex,
+    index: 0,
+    visibleIndex: null,
   };
-}
-
-function getPageIndex(i) {
-  Math.floor(i / PAGE_SIZE);
-}
-
-function getPageIndexAndOffset(i) {
-  return [getPageIndex(i), i % PAGE_SIZE];
 }
 
 function catSlideshowReducer(state, action) {
   console.log("%ccatimage: " + action.type, "color: orange", action);
+
   switch (action.type) {
     case "change-breed":
       return initCatSlideshowState();
-    case "change-index":
+    case "decrement-index":
       return {
-        index: action.index,
-        isIndexChanging: true,
+        ...state,
+        index: Math.max(0, state.index - 1),
       };
+    case "increment-index": {
+      return {
+        ...state,
+        index: state.index + 1,
+      };
+    }
+    case "image-ready": {
+      const { index, visibleIndex } = state;
+
+      return visibleIndex !== index && action.index === index
+        ? { ...state, visibleIndex: index }
+        : state;
+    }
     default:
       throw new Error(`Unhandled action type: ${action.type}`);
   }
 }
 
 function CatSlideshow({ selectedBreedID }) {
-  const prevSelectedBreedIDRef = useRef(selectedBreedID);
-  const prevIndexRef = useRef(null);
-  const { pages, status, fetchPage, resetPages } = usePaginatedFetch(PAGE_SIZE);
+  const { pages, fetchPage, resetPages } = usePaginatedFetch(PAGE_SIZE);
+  const imageStatusMapRef = useRef(new Map());
 
   const [state, dispatch] = useReducer(
     catSlideshowReducer,
@@ -54,84 +91,82 @@ function CatSlideshow({ selectedBreedID }) {
     initCatSlideshowState
   );
 
-  const { index, isIndexChanging } = state;
-  console.log("render", { index, isIndexChanging, selectedBreedID, status });
+  const { index, visibleIndex } = state;
+  console.log("slideshow render", {
+    index,
+    visibleIndex,
+    status: imageStatusMapRef.current,
+  });
 
-  if (selectedBreedID !== prevSelectedBreedIDRef.current) {
-    prevSelectedBreedIDRef.current = selectedBreedID;
-    prevIndexRef.current = null;
+  useEffect(() => {
     resetPages(selectedBreedID);
     dispatch({ type: "change-breed", selectedBreedID });
-  }
+    imageStatusMapRef.current = new Map();
+  }, [selectedBreedID, resetPages]);
 
-  if (isIndexChanging) {
+  useEffect(() => {
     const pageIndex = getPageIndex(index);
-    const prefetchPageIndex = getPageIndex(index + PREFETCH_LOOKAHEAD);
-
-    const doFetchPage = (pageIndex) => {
-      const { url, options } = getCatsApiFetchParams(
-        "/images/search",
-        getSearchApiParams(selectedBreedID, pageIndex),
-        3000
-      );
-
-      fetchPage(url, options, pageIndex, selectedBreedID);
-    };
+    const prefetchPageIndex = getPageIndex(index + PAGE_PREFETCH);
 
     if (!pages[pageIndex]) {
-      doFetchPage(pageIndex);
+      fetchPageFromCatsApi(pageIndex, selectedBreedID, fetchPage);
     }
 
     if (prefetchPageIndex !== pageIndex && !pages[prefetchPageIndex]) {
-      doFetchPage(prefetchPageIndex);
+      fetchPageFromCatsApi(prefetchPageIndex, selectedBreedID, fetchPage);
     }
-  }
+  }, [index, pages, selectedBreedID, fetchPage]);
 
   useEffect(() => {
-    const [pageIndex, offset] = getPageIndexAndOffset(index);
-    console.log("Pages and index", { pageIndex, offset, index });
-  }, [pages, index]);
+    const MAX_PREFETCH = 2;
+    const statusMap = imageStatusMapRef.current;
+    let prefetchCount = 0;
 
-  /*
-  useEffect(() => {
-    const pageIndex = Math.floor(state.nextIndex / PAGE_SIZE);
-    const offset = state.nextIndex % PAGE_SIZE;
-    const url = pages?.[pageIndex]?.[offset]?.url;
+    for (let i = index; i < index + MAX_PREFETCH + 1; i++) {
+      if (!statusMap.has(i)) {
+        statusMap.set(i, "wait");
+      }
+    }
 
-    console.log("index is changing", state.nextIndex, url);
-  }, [pages, state.isIndexChanging, state.nextIndex]);
+    for (let [i, status] of statusMap.entries()) {
+      if (status === "ready") {
+        if (index !== visibleIndex && i === index) {
+          dispatch({ type: "image-ready", index: i });
+        }
+      } else if (status === "prefetch") {
+        ++prefetchCount;
+      } else if (status === "wait") {
+        const url = getImageURL(pages, i);
 
-  // const imageURL = (index) => {
-  //   const { pageIndex, pageOffset } = imageIndex(index);
-  //   const imagePage = state.imagePages[pageIndex];
-  //   return imagePage ? imagePage.data[pageOffset]?.url : null;
-  // };
+        if (url && prefetchCount++ < MAX_PREFETCH) {
+          statusMap.set(i, "prefetch");
 
-  // dispatch({ type: "index-changing" });
-  // const url = imageURL(newIndex);
+          preloadImage(url).then(() => {
+            statusMap.set(i, "ready");
 
-  // if (url !== null) {
-  //   console.log("URL immediate", url);
-  //   dispatch({ type: "index-changed", index: newIndex });
-  //   return;
-  // }
+            if (index !== visibleIndex && i === index) {
+              dispatch({ type: "image-ready", index: i });
+            }
+          });
+        }
+      }
+    }
 
-  // preloadImage(url).then(() => {
-  //   console.log("URL prefetched", url);
-  //   dispatch({ type: "index-changed", index: newIndex });
-  // });
-*/
+    console.log("NEW STATUS MAP", statusMap);
+  }, [pages, index, visibleIndex]);
+
+  const url = visibleIndex !== null ? getImageURL(pages, visibleIndex) : null;
+  console.log("URL", { index, visibleIndex, url });
 
   return (
     <div className="CatSlideshow">
       <div className="mainContainer">
-        <div>{state.index}</div>
-        {/* // <div
-        //   className={`image ${state.isIndexChanging ? "nextLoading" : ""}`}
-        //   style={{
-        //     backgroundImage: `url(${url})`,
-        //   }}
-        // ></div> */}
+        <div
+          className="image"
+          style={{
+            backgroundImage: url ? `url(${url})` : "none",
+          }}
+        ></div>
       </div>
       <CatSlideshowControls
         dispatch={dispatch}
@@ -142,139 +177,3 @@ function CatSlideshow({ selectedBreedID }) {
 }
 
 export default CatSlideshow;
-
-/************************************************************ */
-/*
-const FETCH_BOUNDARY = 2;
-
-function oldCatImageReducer(state, action) {
-  // console.log("Reduce", action);
-  switch (action.type) {
-    case "change-breed":
-      return {
-        ...state,
-        index: 0,
-        imagePages: {},
-        pageCount: null,
-        areImagesLoading: true,
-      };
-
-    case "fetch-page":
-      return {
-        ...state,
-        areImagesLoading: action.isCurrentPage,
-        imagePages: {
-          ...state.imagePages,
-          [action.index]: { loadState: "loading", data: [] },
-        },
-      };
-
-    case "page-loaded":
-      return {
-        ...state,
-        areImagesLoading: false,
-        imagePages: {
-          ...state.imagePages,
-          [action.index]: { loadState: "loaded", data: action.json },
-        },
-      };
-
-    case "index-changing":
-      return {
-        ...state,
-        isIndexChanging: true,
-      };
-
-    case "index-changed":
-      return {
-        ...state,
-        index: action.index,
-        isIndexChanging: false,
-      };
-
-    default:
-      return state;
-  }
-}
-
-function CatImageOld({ isBreedsError, selectedBreedID }) {
-  const [state, dispatch] = useReducer(catSlideshowReducer, {
-    imagePages: {},
-    index: null,
-    maxPage: null,
-    areImagesLoading: true,
-    canShowCurrentImage: false,
-    isIndexChanging: false,
-  });
-
-  const imageIndex = (index) => ({
-    pageIndex: Math.floor(index / PAGE_SIZE),
-    pageOffset: index % PAGE_SIZE,
-  });
-
-  const onButtonClick = useCallback(
-    (value) => {
-      const imageURL = (index) => {
-        const { pageIndex, pageOffset } = imageIndex(index);
-        const imagePage = state.imagePages[pageIndex];
-        return imagePage ? imagePage.data[pageOffset]?.url : null;
-      };
-
-      dispatch({ type: "index-changing" });
-      const newIndex = Math.max(0, state.index + value);
-      const url = imageURL(newIndex);
-
-      if (url !== null) {
-        console.log("URL immediate", url);
-        dispatch({ type: "index-changed", index: newIndex });
-        return;
-      }
-
-      preloadImage(url).then(() => {
-        console.log("URL prefetched", url);
-        dispatch({ type: "index-changed", index: newIndex });
-      });
-    },
-    [state.index, state.imagePages]
-  );
-
-  const isLoading = selectedBreedID === null || state.areImagesLoading;
-  const isError = isBreedsError;
-  let url = null;
-
-  if (!isLoading && state.index !== null) {
-    const { pageIndex, pageOffset } = imageIndex(state.index);
-    const imagePage = state.imagePages[pageIndex];
-    url = imagePage ? imagePage.data[pageOffset]?.url : "";
-  }
-
-  // console.log("RENDER", {
-  //   index: state.index,
-  //   isIndexChanging: state.isIndexChanging,
-  //   // selectedBreedID,
-  //   imagesLoading: state.areImagesLoading,
-  // });
-
-  return (
-    <div className="CatImage">
-      {isError ? (
-        <div className="message">An error has occurred</div>
-      ) : isLoading ? (
-        <div className="message">loading...</div>
-      ) : (
-        <div
-          className={`image ${state.isIndexChanging ? "nextLoading" : ""}`}
-          style={{
-            backgroundImage: `url(${url})`,
-          }}
-        ></div>
-      )}
-      <CatSlideshowControls
-        isLoading={isLoading || state.isIndexChanging}
-        canScrollLeft={state.index !== 0}
-        isError={isBreedsError}
-        onButtonClick={onButtonClick}
-      />
-    </div>
-  );
-}*/

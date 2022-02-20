@@ -51,7 +51,7 @@ function catAppReducer(state, action) {
 }
 
 function CatApp() {
-  const { status, runFetch } = useAbortableFetch("loading");
+  const { status: loadStatus, runFetch } = useAbortableFetch("loading");
   const [state, dispatch] = useReducer(catAppReducer, {
     breeds: null,
     selectedBreedID: null,
@@ -88,14 +88,14 @@ function CatApp() {
         dispatch={dispatch}
         breeds={state.breeds}
         selectedBreedID={state.selectedBreedID}
-        status={status}
+        status={loadStatus}
       />
-      {status === "loading" ? (
+      {loadStatus === "loading" || state.selectedBreedID === null ? (
         <>
           <MessageCard>loading...</MessageCard>
           <CatSlideshowControls isDisabled={true} />
         </>
-      ) : status === "error" ? (
+      ) : loadStatus === "error" ? (
         <>
           <MessageCard className="error">an error has occurred</MessageCard>
           <CatSlideshowControls isDisabled={true} />

@@ -3,13 +3,13 @@ function CatSlideshowControls({ dispatch, isDisabled, canScrollLeft }) {
     <div className="CatControls">
       <button
         disabled={isDisabled || !canScrollLeft}
-        onClick={() => dispatch({ type: "change-index", increment: -1 })}
+        onClick={() => dispatch({ type: "decrement-index" })}
       >
         &lt;
       </button>
       <button
         disabled={isDisabled}
-        onClick={() => dispatch({ type: "change-index", increment: 1 })}
+        onClick={() => dispatch({ type: "increment-index" })}
       >
         &gt;
       </button>

@@ -47,6 +47,7 @@ function usePaginatedFetch(pageSize) {
 
   const resetPages = useCallback(
     (key) => {
+      console.log("RESET PAGES");
       abortFetch();
       dispatch({ type: "reset", key });
     },

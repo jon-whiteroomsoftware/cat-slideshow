@@ -43,7 +43,10 @@ function useAbortableFetch(initialStatus) {
   );
 
   useEffect(() => {
-    return () => abort();
+    return () => {
+      console.log("ABORT");
+      abort();
+    };
   }, [abort]);
 
   return {
