@@ -13,6 +13,8 @@ import "./CatApp.css";
 
 /*
 3) image slider with timer between each image
+  - timing bug with fast clicking (just missing a render?)
+    - give control of image ready map to reducer?
 
   - error state + ErrorBoundary (react-error-boundary?)
   - use vh for sizing?
