@@ -34,71 +34,65 @@ function getImageURL(pages, index) {
   return pages?.[pageIndex]?.data?.[offset]?.url;
 }
 
-function getFetchInfo(statusMap) {
-  const fetchInfo = {
-    maxIndex: -1,
-    waitIndexes: [],
-    prefetchCount: 0,
-  };
+// function getFetchInfo(prefetchMap) {
+//   const fetchInfo = {
+//     waitIndexes: [],
+//     prefetchCount: 0,
+//   };
 
-  for (let i of statusMap.keys()) {
-    if (i > fetchInfo.maxIndex) {
-      fetchInfo.maxIndex = i;
-    }
+//   for (let i of prefetchMap.keys()) {
+//     const status = prefetchMap.get(i);
 
-    const status = statusMap.get(i);
+//     if (status === "wait") {
+//       fetchInfo.waitIndexes.push(i);
+//     } else if (status === "prefetch") {
+//       fetchInfo.prefetchCount++;
+//     }
+//   }
 
-    if (status === "wait") {
-      fetchInfo.waitIndexes.push(i);
-    } else if (status === "prefetch") {
-      fetchInfo.prefetchCount++;
-    }
-  }
-
-  return fetchInfo;
-}
+//   return fetchInfo;
+// }
 
 function initCatSlideshowState() {
   return {
     index: 0,
-    isIndexReady: false,
     visibleIndex: null,
+    readyMap: {},
   };
 }
 
 function catSlideshowReducer(state, action) {
   console.log("%ccatimage: " + action.type, "color: orange", action);
 
+  function changeIndex(state, increment) {
+    const newIndex = Math.max(0, state.index + increment);
+    const isReady = state.indexReadyMap[newIndex] === "ready";
+
+    return {
+      ...state,
+      index: newIndex,
+      visibleIndex: isReady ? newIndex : state.visibleIndex,
+    };
+  }
+
   switch (action.type) {
     case "change-breed":
       return initCatSlideshowState();
     case "decrement-index":
-      return {
-        ...state,
-        index: Math.max(0, state.index - 1),
-        isIndexReady: false,
-      };
+      return changeIndex(state, -1);
     case "increment-index": {
-      return {
-        ...state,
-        isIndexReady: false,
-        index: state.index + 1,
-      };
+      return changeIndex(state, 1);
     }
-    case "image-ready": {
-      const { index, visibleIndex } = state;
-      const shouldUpdateState = action.index === index && !state.isIndexReady;
-      const newState = shouldUpdateState
-        ? { ...state, visibleIndex: index, isIndexReady: true }
-        : state;
+    case "prefetch-status": {
+      // console.log("Prefetch status", action);
+      const newState = {
+        ...state,
+        indexReadyMap: { ...state.indexReadyMap, [action.index]: "ready" },
+      };
 
-      // console.log("IMAGE READY", {
-      //   shouldUpdateState,
-      //   index,
-      //   action: action.index,
-      //   isIndexReady: state.isIndexReady,
-      //   visibleIndex,
-      // });
+      if (action.index === state.index) {
+        newState.visibleIndex = action.index;
+      }
 
       return newState;
     }
@@ -113,7 +107,7 @@ function CatSlideshow({ selectedBreedID }) {
     "loading"
   );
   const prevSelectedBreedIDRef = useRef(selectedBreedID);
-  const imageStatusMapRef = useRef(new Map());
+  const prefetchMapRef = useRef(new Map());
 
   const [state, dispatch] = useReducer(
     catSlideshowReducer,
@@ -121,11 +115,12 @@ function CatSlideshow({ selectedBreedID }) {
     initCatSlideshowState
   );
 
-  const { index, visibleIndex } = state;
+  const { index, visibleIndex, indexReadyMap } = state;
   console.log("slideshow render", {
     index,
     visibleIndex,
-    status: [...imageStatusMapRef.current],
+    indexReadyMap,
+    prefetchMap: [...prefetchMapRef.current],
   });
 
   useEffect(() => {
@@ -133,7 +128,7 @@ function CatSlideshow({ selectedBreedID }) {
       prevSelectedBreedIDRef.current = selectedBreedID;
       resetPages(selectedBreedID);
       dispatch({ type: "change-breed", selectedBreedID });
-      imageStatusMapRef.current = new Map();
+      prefetchMapRef.current.clear();
     }
   }, [selectedBreedID, resetPages]);
 
@@ -151,48 +146,52 @@ function CatSlideshow({ selectedBreedID }) {
   }, [index, pages, selectedBreedID, fetchPage]);
 
   useEffect(() => {
-    const updatePrefetching = () => {
-      const statusMap = imageStatusMapRef.current;
-      const { maxIndex, waitIndexes, prefetchCount } = getFetchInfo(statusMap);
-      console.log("UPDATE PREFETCHING - INFO", {
-        index,
-        visibleIndex,
-        maxIndex,
-        waitIndexes,
-        prefetchCount,
-        map: [...statusMap],
-      });
+    const prefetchMap = prefetchMapRef.current;
+    const waitIndexes = [...prefetchMap.keys()].filter(
+      (k) => prefetchMap.get(k) === "wait"
+    );
+    const prefetchCount = [...prefetchMap.values()].filter(
+      (v) => v === "prefetch"
+    ).length;
 
-      if (index !== visibleIndex && statusMap.get(index) === "ready") {
-        dispatch({ type: "image-ready", index });
+    // console.log("UPDATE PREFETCHING - INFO", {
+    //   index,
+    //   visibleIndex,
+    //   waitIndexes,
+    //   prefetchCount,
+    //   map: [...prefetchMap],
+    // });
+
+    for (let i = 0; i < MAX_PREFETCH; i++) {
+      const newIndex = index + i + (index === 0 ? 0 : 1);
+      if (!prefetchMap.get(newIndex)) {
+        // console.log("Adding wait index: ", newIndex);
+        prefetchMap.set(newIndex, "wait");
       }
+    }
 
-      for (let i = 0; i < MAX_PREFETCH; i++) {
-        const newIndex = index + i + (index === 0 ? 0 : 1);
-        if (!statusMap.get(newIndex)) {
-          // console.log("Adding wait index: ", newIndex);
-          statusMap.set(newIndex, "wait");
-        }
-      }
+    if (prefetchCount < MAX_PREFETCH) {
+      waitIndexes.slice(0, MAX_PREFETCH - prefetchCount).forEach((i) => {
+        const url = getImageURL(pages, i);
 
-      if (prefetchCount < MAX_PREFETCH) {
-        waitIndexes.slice(0, MAX_PREFETCH - prefetchCount).forEach((i) => {
+        const updateImageStatus = (i, status) => {
+          // console.log("Update image status", i, status);
+          //prefetchMap.delete(i);
+          prefetchMap.set(i, status);
+          dispatch({ type: "prefetch-status", index: i, status });
+        };
+
+        if (url) {
           // console.log("Starting prefetch", i);
-          const url = getImageURL(pages, i);
-          if (url) {
-            statusMap.set(i, "prefetch");
+          prefetchMap.set(i, "prefetch");
 
-            preloadImage(url).then(() => {
-              statusMap.set(i, "ready");
-              updatePrefetching();
-            });
-          }
-        });
-      }
-    };
-
-    updatePrefetching();
-  }, [pages, index, visibleIndex]);
+          preloadImage(url)
+            .then(() => updateImageStatus(i, "ready"))
+            .catch(() => updateImageStatus(i, "error"));
+        }
+      });
+    }
+  }, [pages, index, visibleIndex, state.indexReadyMap]);
 
   return (
     <div className="CatSlideshow">
