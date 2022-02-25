@@ -34,25 +34,6 @@ function getImageURL(pages, index) {
   return pages?.[pageIndex]?.data?.[offset]?.url;
 }
 
-// function getFetchInfo(prefetchMap) {
-//   const fetchInfo = {
-//     waitIndexes: [],
-//     prefetchCount: 0,
-//   };
-
-//   for (let i of prefetchMap.keys()) {
-//     const status = prefetchMap.get(i);
-
-//     if (status === "wait") {
-//       fetchInfo.waitIndexes.push(i);
-//     } else if (status === "prefetch") {
-//       fetchInfo.prefetchCount++;
-//     }
-//   }
-
-//   return fetchInfo;
-// }
-
 function initCatSlideshowState() {
   return {
     index: 0,
