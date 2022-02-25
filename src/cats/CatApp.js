@@ -1,9 +1,6 @@
-import { useState, useEffect, useCallback, useRef, useReducer } from "react";
-import { clsx } from "clsx";
-import { preloadImage } from "./utils.js";
+import { useEffect, useReducer } from "react";
 import useAbortableFetch from "./useAbortableFetch.js";
 import getCatsApiFetchParams from "./getCatsApiFetchParams.js";
-import usePaginatedFetch from "./usePaginatedFetch";
 import CatSlideshow from "./CatSlideshow.js";
 import CatSlideshowControls from "./CatSlideshowControls.js";
 import BreedSelector from "./BreedSelector.js";
@@ -14,15 +11,13 @@ import "./CatApp.css";
 /*
 3) image slider with timer between each image
   - timing bug with fast clicking (just missing a render?)
-    - give control of image ready map to reducer?
+  - handle image load error state
 
   - error state + ErrorBoundary (react-error-boundary?)
   - use vh for sizing?
-  - useMemo and check rendering
   - count renders
   - timer to change image
   - countdown should reset for each image
-  - useContext, useCallback, useMemo
   - transition images off and onto screen (refs and useLayoutEffect?)
     - fade in/out?
   - have another screen with typedown search

@@ -43,7 +43,7 @@ function initCatSlideshowState() {
 }
 
 function catSlideshowReducer(state, action) {
-  console.log("%ccatimage: " + action.type, "color: orange", action);
+  console.log("%ccat slideshow: " + action.type, "color: red", action);
 
   function changeIndex(state, increment) {
     const newIndex = Math.max(0, state.index + increment);
@@ -97,12 +97,6 @@ function CatSlideshow({ selectedBreedID }) {
   );
 
   const { index, visibleIndex, indexReadyMap } = state;
-  console.log("slideshow render", {
-    index,
-    visibleIndex,
-    indexReadyMap,
-    prefetchMap: [...prefetchMapRef.current],
-  });
 
   useEffect(() => {
     if (selectedBreedID !== prevSelectedBreedIDRef.current) {
