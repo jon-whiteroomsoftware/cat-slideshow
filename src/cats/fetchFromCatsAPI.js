@@ -2,14 +2,14 @@ let API_KEY = "1a2691b0-d86c-41c1-b968-3b264d96ff7";
 //API_KEY = "DEMO-API-KEY";
 const API_VERSION = "1";
 const SERVER = "api.thecatapi.com";
+const DELAY_URL = "https://deelay.me/3000/";
 
 const fetchFromCatsAPI = async (path, params = {}, options = {}, isSlow) => {
   const queryParams = new URLSearchParams(params);
   let url = new URL(`/v${API_VERSION}${path}`, `https://${SERVER}`);
-  console.log("CAT API FETCH", url.toString(), queryParams.toString(), options);
 
   if (isSlow) {
-    url = "https://deelay.me/3000/" + url;
+    url = DELAY_URL + url;
   }
 
   const response = await fetch(`${url}?${queryParams}`, {

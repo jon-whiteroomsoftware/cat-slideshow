@@ -10,16 +10,12 @@ const PAGE_PREFETCH = 8;
 const MAX_PREFETCH = 2;
 
 function fetchPageFromCatsApi(pageIndex, selectedBreedID, fetchPage) {
-  const { url, options } = getCatsApiFetchParams(
-    "/images/search",
-    {
-      breeds: selectedBreedID === "all" ? "" : selectedBreedID,
-      limit: PAGE_SIZE,
-      order: "ASC",
-      page: pageIndex,
-    },
-    undefined //1000
-  );
+  const { url, options } = getCatsApiFetchParams("/images/search", {
+    breeds: selectedBreedID === "all" ? "" : selectedBreedID,
+    limit: PAGE_SIZE,
+    order: "ASC",
+    page: pageIndex,
+  });
 
   fetchPage(url, options, pageIndex, selectedBreedID);
 }
@@ -43,7 +39,7 @@ function initCatSlideshowState() {
 }
 
 function catSlideshowReducer(state, action) {
-  console.log("%ccat slideshow: " + action.type, "color: red", action);
+  //console.log("%ccat slideshow: " + action.type, "color: red", action);
 
   function changeIndex(state, increment) {
     const newIndex = Math.max(0, state.index + increment);
@@ -65,7 +61,6 @@ function catSlideshowReducer(state, action) {
       return changeIndex(state, 1);
     }
     case "prefetch-status": {
-      // console.log("Prefetch status", action);
       const newState = {
         ...state,
         indexReadyMap: { ...state.indexReadyMap, [action.index]: "ready" },
@@ -96,7 +91,7 @@ function CatSlideshow({ selectedBreedID }) {
     initCatSlideshowState
   );
 
-  const { index, visibleIndex, indexReadyMap } = state;
+  const { index, visibleIndex } = state;
 
   useEffect(() => {
     if (selectedBreedID !== prevSelectedBreedIDRef.current) {
@@ -129,18 +124,9 @@ function CatSlideshow({ selectedBreedID }) {
       (v) => v === "prefetch"
     ).length;
 
-    // console.log("UPDATE PREFETCHING - INFO", {
-    //   index,
-    //   visibleIndex,
-    //   waitIndexes,
-    //   prefetchCount,
-    //   map: [...prefetchMap],
-    // });
-
     for (let i = 0; i < MAX_PREFETCH; i++) {
       const newIndex = index + i + (index === 0 ? 0 : 1);
       if (!prefetchMap.get(newIndex)) {
-        // console.log("Adding wait index: ", newIndex);
         prefetchMap.set(newIndex, "wait");
       }
     }
@@ -150,14 +136,11 @@ function CatSlideshow({ selectedBreedID }) {
         const url = getImageURL(pages, i);
 
         const updateImageStatus = (i, status) => {
-          // console.log("Update image status", i, status);
-          //prefetchMap.delete(i);
           prefetchMap.set(i, status);
           dispatch({ type: "prefetch-status", index: i, status });
         };
 
         if (url) {
-          // console.log("Starting prefetch", i);
           prefetchMap.set(i, "prefetch");
 
           preloadImage(url)

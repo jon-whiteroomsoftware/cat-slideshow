@@ -2,7 +2,7 @@ import { useCallback, useReducer } from "react";
 import useAbortableFetch from "./useAbortableFetch";
 
 function fetchReducer(state, action) {
-  console.log("%cfetchReducer: " + action.type, "color: blue", action);
+  //console.log("%cfetchReducer: " + action.type, "color: blue", action);
 
   if (action.type === "reset") {
     return { pages: {}, key: action.key };

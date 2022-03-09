@@ -3,6 +3,7 @@ import ReactDOM from "react-dom";
 import "./index.css";
 import CatApp from "./cats/CatApp";
 
+// test app mounting/unmounting behavior
 function Unmounter({ children }) {
   const [isMounted, setIsMounted] = React.useState(true);
 

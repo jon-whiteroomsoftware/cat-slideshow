@@ -9,24 +9,19 @@ import LoadingCard from "./LoadingCard.js";
 import "./CatApp.css";
 
 /*
-3) image slider with timer between each image
-  - timing bug with fast clicking (just missing a render?)
-  - handle image load error state
+  TODO
 
-  - error state + ErrorBoundary (react-error-boundary?)
-  - use vh for sizing?
-  - count renders
-  - timer to change image
-  - countdown should reset for each image
   - transition images off and onto screen (refs and useLayoutEffect?)
-    - fade in/out?
-  - have another screen with typedown search
+  - error state + ErrorBoundary (react-error-boundary?)
+  - handle image load error state
+  - timer to change image automatically
+  - tests?
 */
 
 const BREED_ID_KEY = "CatApp-breed-id";
 
 function catAppReducer(state, action) {
-  console.log("%ccatapp: " + action.type, "color: green", action);
+  //console.log("%ccatapp: " + action.type, "color: green", action);
   switch (action.type) {
     case "select-breed": {
       window.localStorage.setItem(BREED_ID_KEY, action.id);
