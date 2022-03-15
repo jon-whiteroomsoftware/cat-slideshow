@@ -1,0 +1,30 @@
+.BreedSelector {
+  border-bottom: 2px solid #ccc;
+  display: flex;
+  height: 60px;
+  align-items: center;
+  justify-content: center;
+}
+
+.BreedSelector form {
+  position: relative;
+}
+
+.BreedSelector form label {
+  color: #999;
+  margin-right: 20px;
+}
+
+.BreedSelector .selectContainer {
+  position: relative;
+}
+
+.BreedSelector form select {
+  border: 2px solid #ccc;
+  font-size: 1.2rem;
+  width: 200px;
+}
+
+.BreedSelector form select.isError {
+  background-color: #ccc;
+}
