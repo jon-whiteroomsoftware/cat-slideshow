@@ -1,0 +1,33 @@
+@keyframes animateSlide {
+  0% {
+    left: var(--slideStartPx);
+  }
+  100% {
+    left: var(--slideEndPx);
+  }
+}
+
+.SlideAnimation {
+  --slideAnimation: animateSlide 0.5s ease-in-out;
+  background-color: rgba(0, 0, 0, 0.02);
+  height: 300px;
+  width: 500px;
+  position: relative;
+  overflow: hidden;
+}
+
+.slideContainer {
+  position: absolute;
+  top: 0;
+  animation: var(--slideAnimation);
+}
+
+.slideToNext {
+  --slideStartPx: 500px;
+  --slideEndPx: 0px;
+}
+
+.slideToPrevious {
+  --slideStartPx: 0px;
+  --slideEndPx: 500px;
+}

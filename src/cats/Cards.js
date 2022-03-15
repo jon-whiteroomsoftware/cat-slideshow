@@ -9,8 +9,6 @@ function LoadingCard({ className }) {
   );
 }
 
-export default LoadingCard;
-
 function MessageCard({ className, children }) {
   return (
     <div className={`MessageCard ${className}`}>

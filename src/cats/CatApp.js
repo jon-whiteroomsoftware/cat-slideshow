@@ -10,9 +10,8 @@ import "./CatApp.css";
 /*
   TODO
 
-  - clean up css
-  - fix loading and message card hierarchy
   - slide images on and off screen
+  - get all height and width values from parent
 
   - error state + ErrorBoundary (react-error-boundary?)
   - handle image load error state
