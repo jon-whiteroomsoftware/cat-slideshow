@@ -34,6 +34,7 @@ function getImageURL(pages, index) {
 
 function initCatSlideshowState() {
   return {
+    direction: Direction.Next,
     index: 0,
     visibleIndex: null,
     readyMap: {},
@@ -49,6 +50,7 @@ function catSlideshowReducer(state, action) {
 
     return {
       ...state,
+      direction: increment > 0 ? Direction.Next : Direction.Previous,
       index: newIndex,
       visibleIndex: isReady ? newIndex : state.visibleIndex,
     };
@@ -80,12 +82,12 @@ function catSlideshowReducer(state, action) {
 }
 
 function CatSlideshow({ selectedBreedID }) {
+  const prevSelectedBreedIDRef = useRef(selectedBreedID);
+  const prefetchMapRef = useRef(new Map());
   const { pages, fetchPage, resetPages } = usePaginatedFetch(
     PAGE_SIZE,
     "loading"
   );
-  const prevSelectedBreedIDRef = useRef(selectedBreedID);
-  const prefetchMapRef = useRef(new Map());
 
   const [state, dispatch] = useReducer(
     catSlideshowReducer,
@@ -93,7 +95,7 @@ function CatSlideshow({ selectedBreedID }) {
     initCatSlideshowState
   );
 
-  const { index, visibleIndex } = state;
+  const { direction, index, visibleIndex } = state;
 
   useEffect(() => {
     if (selectedBreedID !== prevSelectedBreedIDRef.current) {
@@ -158,12 +160,18 @@ function CatSlideshow({ selectedBreedID }) {
       {visibleIndex !== null ? (
         <div className="mainContainer">
           <>
-            <div
-              className="image"
-              style={{
-                backgroundImage: `url(${getImageURL(pages, visibleIndex)})`,
-              }}
-            ></div>
+            <SlideAnimation
+              child={
+                <div
+                  className="image"
+                  key={visibleIndex}
+                  style={{
+                    backgroundImage: `url(${getImageURL(pages, visibleIndex)})`,
+                  }}
+                ></div>
+              }
+              direction={direction}
+            />
             {visibleIndex !== index && <LoadingCard className="imageOverlay" />}
           </>
         </div>

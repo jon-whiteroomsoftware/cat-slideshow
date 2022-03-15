@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import "./SlideAnimation.css";
 
-export const Direction = {
+const Direction = {
   Next: 0,
   Previous: 1,
 };
@@ -27,11 +27,11 @@ function SlideAnimation({ child, direction }) {
     setSlideChildren([child]);
   };
 
-  console.log(
-    "%c Render",
-    "color: blue",
-    slideChildren.map((c) => c.key)
-  );
+  // console.log(
+  //   "%c Render",
+  //   "color: blue",
+  //   slideChildren.map((c) => c.key)
+  // );
 
   return (
     <div className="SlideAnimation">
@@ -53,4 +53,4 @@ function SlideAnimation({ child, direction }) {
   );
 }
 
-export default SlideAnimation;
+export { SlideAnimation, Direction };

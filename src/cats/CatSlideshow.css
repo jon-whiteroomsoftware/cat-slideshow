@@ -10,6 +10,7 @@
 .CatSlideshow .image {
   background-size: cover;
   height: 300px;
+  width: 500px;
 }
 
 .CatSlideshow .mainContainer .imageOverlay {

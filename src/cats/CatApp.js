@@ -10,13 +10,14 @@ import "./CatApp.css";
 /*
   TODO
 
-  - slide images on and off screen
-  - get all height and width values from parent
-
   - error state + ErrorBoundary (react-error-boundary?)
   - handle image load error state
-  - timer to change image automatically
-  - tests?
+
+  NOT DONE
+
+  - tests
+  - typechecking
+
 */
 
 const BREED_ID_KEY = "CatApp-breed-id";
