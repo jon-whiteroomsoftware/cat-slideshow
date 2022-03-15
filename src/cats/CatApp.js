@@ -4,14 +4,16 @@ import getCatsApiFetchParams from "./getCatsApiFetchParams.js";
 import CatSlideshow from "./CatSlideshow.js";
 import CatSlideshowControls from "./CatSlideshowControls.js";
 import BreedSelector from "./BreedSelector.js";
-import MessageCard from "./MessageCard.js";
-import LoadingCard from "./LoadingCard.js";
+import { MessageCard, LoadingCard } from "./Cards.js";
 import "./CatApp.css";
 
 /*
   TODO
 
-  - transition images off and onto screen (refs and useLayoutEffect?)
+  - clean up css
+  - fix loading and message card hierarchy
+  - slide images on and off screen
+
   - error state + ErrorBoundary (react-error-boundary?)
   - handle image load error state
   - timer to change image automatically

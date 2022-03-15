@@ -1,3 +1,5 @@
+import "./BreedSelector.css";
+
 function BreedSelector({ dispatch, breeds, selectedBreedID, status }) {
   function onSelectChange(e) {
     dispatch({ type: "select-breed", id: e.target.value });

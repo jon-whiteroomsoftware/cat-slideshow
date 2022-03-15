@@ -3,7 +3,8 @@ import { preloadImage } from "./utils.js";
 import getCatsApiFetchParams from "./getCatsApiFetchParams.js";
 import usePaginatedFetch from "./usePaginatedFetch";
 import CatSlideshowControls from "./CatSlideshowControls.js";
-import LoadingCard from "./LoadingCard.js";
+import { LoadingCard } from "./Cards.js";
+import "./CatSlideshow.css";
 
 const PAGE_SIZE = 20;
 const PAGE_PREFETCH = 8;
