@@ -10,14 +10,10 @@ import "./CatApp.css";
 /*
   TODO
 
-  - error state + ErrorBoundary (react-error-boundary?)
-  - handle image load error state
-
-  NOT DONE
-
-  - tests
-  - typechecking
-
+  - error state using ErrorBoundary
+  - handle API + image load errors semi-gracefully
+  - tests?
+  - typechecks?
 */
 
 const BREED_ID_KEY = "CatApp-breed-id";
