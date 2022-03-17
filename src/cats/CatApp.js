@@ -7,15 +7,6 @@ import BreedSelector from "./BreedSelector.js";
 import { MessageCard, LoadingCard } from "./Cards.js";
 import "./CatApp.css";
 
-/*
-  TODO
-
-  - error state using ErrorBoundary
-  - handle API + image load errors semi-gracefully
-  - tests?
-  - typechecks?
-*/
-
 const BREED_ID_KEY = "CatApp-breed-id";
 
 function catAppReducer(state, action) {

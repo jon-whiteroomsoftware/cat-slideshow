@@ -1,19 +1,46 @@
 # Cat Slideshow
 
-[Try the app here](https://jon-whiteroomsoftware.github.io/cat-slideshow/)
+### Try the app
 
-I'm late to the React Hooks party. Up to this point I've barely written any Hooks code. I wanted to implement a somewhat useful app that let me explore the basic hooks and write some useful custom hooks.
-
-### Functionality/Features
-
-- Select which breeds you want to see photos of
-- Use next and previous arrows to scroll through photos
-- Prefetch photo data and images in the background
-- Show a loading spinner when the API or image loading backs up
-
-### Navigating the code
+[Click here](https://jon-whiteroomsoftware.github.io/cat-slideshow/)
 
 ### Code review - what I'm looking for
 
-- Any and all feedback from major abstraction issues down to the nittiest of nits
-- Advice on missing features
+1. I've mostly been focussed on making sure I truly understand the standard hooks and how to abstract out reusable custom hooks.
+1. I also wanted to ensure that I was keep an eye on good performance habits by keeping the number of renders to a minimum.
+1. I'd like to hear any and all feedback you have, from problems with abstraction, hooks etc. all the way down to the nittiest of nits.
+1. It would also be great to hear your advice on better ways to do things or missing features of Hooks I could be using.
+1. While this obviously isn't production code, I'm trying to treat it as such.
+
+### Functionality/Features
+
+- Select a breed to show photos of only that breed, or "All Breeds"
+- Use next and previous arrows to scroll through photos
+  - Arrows disable at beginning and end of photo data
+- Prefetch photo data and images in the background
+  - Fetch eagerly from CatAPI in the background to minimize load times
+  - Abort in-flight HTTP requests when switching breeds or when component is unmounted
+  - Don't show photos until they have been preloaded
+  - Show a loading spinner when the API or image loading backs up
+- Animate next and previous photos with simple slide animation
+- Persist selected breed in local storage
+
+### What's missing
+
+- ErrorBoundary for API failures
+- Tests
+- Typechecks
+
+### Navigating the code
+
+- Cat App
+  - BreedSelector
+    - useAbortableFetch
+  - CatSlideshow
+    - MessageCard
+    - LoadingCard
+    - CatSlideshowControls
+    - SlideAnimation
+    - usePaginatedFetch
+      - useAbortableFetch
+        - useAsync

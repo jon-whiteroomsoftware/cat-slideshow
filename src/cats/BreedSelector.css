@@ -1,5 +1,6 @@
 .BreedSelector {
   border-bottom: 2px solid #ccc;
+  font: 21px Arial;
   display: flex;
   height: 60px;
   align-items: center;
@@ -13,6 +14,8 @@
 .BreedSelector form label {
   color: #999;
   margin-right: 20px;
+  position: relative;
+  top: 1px;
 }
 
 .BreedSelector .selectContainer {
