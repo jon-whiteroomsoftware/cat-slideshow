@@ -12,9 +12,10 @@ function fetchReducer(state, action) {
     return state; // ignore stale fetch responses
   }
 
-  const updateStateForPage = (pageState) => {
+  const updateStateForPage = (pageState, otherState) => {
     return {
       ...state,
+      ...otherState,
       pages: {
         ...state.pages,
         [action.index]: pageState,
@@ -26,8 +27,13 @@ function fetchReducer(state, action) {
     case "fetch-page":
       return updateStateForPage({ status: "loading", data: [] });
 
-    case "page-loaded":
-      return updateStateForPage({ status: "loaded", data: action.data });
+    case "page-loaded": {
+      const metadata = { ...state.metadata, ...(action.metadata || {}) };
+      return updateStateForPage(
+        { status: "loaded", data: action.pageData },
+        { metadata }
+      );
+    }
 
     case "page-error":
       return updateStateForPage({ status: "error", data: [] });
@@ -38,7 +44,11 @@ function fetchReducer(state, action) {
 }
 
 function usePaginatedFetch(pageSize, initialStatus = "idle") {
-  const [state, dispatch] = useReducer(fetchReducer, { pages: {}, key: null });
+  const [state, dispatch] = useReducer(fetchReducer, {
+    metadata: null,
+    pages: {},
+    key: null,
+  });
   const {
     status: fetchStatus,
     runFetch,
@@ -54,14 +64,20 @@ function usePaginatedFetch(pageSize, initialStatus = "idle") {
   );
 
   const fetchPage = useCallback(
-    (url, options, index, key) => {
+    (url, options, index, key, getPageData, getMetadata = null) => {
       dispatch({ type: "fetch-page", url, index, key });
 
       return runFetch(url, options)
         .then(async (response) => {
           if (response && response.ok) {
-            const json = await response.json();
-            dispatch({ type: "page-loaded", url, index, data: json, key });
+            dispatch({
+              type: "page-loaded",
+              url,
+              index,
+              pageData: await getPageData(response),
+              metadata: getMetadata?.(response),
+              key,
+            });
           }
         })
         .catch((error) => {

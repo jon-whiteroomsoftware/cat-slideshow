@@ -1,6 +1,11 @@
 import "./CatSlideshowControls.css";
 
-function CatSlideshowControls({ dispatch, isDisabled, canScrollLeft }) {
+function CatSlideshowControls({
+  dispatch,
+  isDisabled,
+  canScrollLeft,
+  canScrollRight,
+}) {
   return (
     <div className="CatSlideshowControls">
       <button
@@ -10,7 +15,7 @@ function CatSlideshowControls({ dispatch, isDisabled, canScrollLeft }) {
         &lt;
       </button>
       <button
-        disabled={isDisabled}
+        disabled={isDisabled || !canScrollRight}
         onClick={() => dispatch({ type: "increment-index" })}
       >
         &gt;

@@ -13,13 +13,26 @@ const MAX_PREFETCH = 2;
 
 function fetchPageFromCatsApi(pageIndex, selectedBreedID, fetchPage) {
   const { url, options } = getCatsApiFetchParams("/images/search", {
-    breeds: selectedBreedID === "all" ? "" : selectedBreedID,
+    breed_id: selectedBreedID === "all" ? "" : selectedBreedID,
     limit: PAGE_SIZE,
     order: "ASC",
     page: pageIndex,
   });
 
-  fetchPage(url, options, pageIndex, selectedBreedID);
+  const getPageData = async (response) => {
+    const json = await response.json();
+    return json.map((item) => ({ id: item.id, url: item.url }));
+  };
+
+  const getMetadata = (response) => {
+    return Object.fromEntries(
+      [...response.headers.entries()].filter(
+        (entry) => entry[0] === "pagination-count"
+      )
+    );
+  };
+
+  fetchPage(url, options, pageIndex, selectedBreedID, getPageData, getMetadata);
 }
 
 function getPageIndex(index) {
@@ -36,16 +49,20 @@ function initCatSlideshowState() {
   return {
     direction: Direction.Next,
     index: 0,
+    maxIndex: null,
     visibleIndex: null,
     readyMap: {},
   };
 }
 
 function catSlideshowReducer(state, action) {
-  //console.log("%ccat slideshow: " + action.type, "color: red", action);
+  //console.log("%ccat slideshow: " + action.type, "color: red", action, state);
 
   function changeIndex(state, increment) {
-    const newIndex = Math.max(0, state.index + increment);
+    const newIndex = Math.min(
+      Math.max(0, state.index + increment),
+      state.maxIndex
+    );
     const isReady = state.indexReadyMap[newIndex] === "ready";
 
     return {
@@ -59,6 +76,8 @@ function catSlideshowReducer(state, action) {
   switch (action.type) {
     case "change-breed":
       return initCatSlideshowState();
+    case "update-max-index":
+      return { ...state, maxIndex: action.maxIndex };
     case "decrement-index":
       return changeIndex(state, -1);
     case "increment-index": {
@@ -84,7 +103,7 @@ function catSlideshowReducer(state, action) {
 function CatSlideshow({ selectedBreedID }) {
   const prevSelectedBreedIDRef = useRef(selectedBreedID);
   const prefetchMapRef = useRef(new Map());
-  const { pages, fetchPage, resetPages } = usePaginatedFetch(
+  const { pages, metadata, fetchPage, resetPages } = usePaginatedFetch(
     PAGE_SIZE,
     "loading"
   );
@@ -109,13 +128,14 @@ function CatSlideshow({ selectedBreedID }) {
   useEffect(() => {
     const pageIndex = getPageIndex(index);
     const prefetchPageIndex = getPageIndex(index + PAGE_PREFETCH);
+    const doFetch = (i) => fetchPageFromCatsApi(i, selectedBreedID, fetchPage);
 
     if (!pages[pageIndex]) {
-      fetchPageFromCatsApi(pageIndex, selectedBreedID, fetchPage);
+      doFetch(pageIndex);
     }
 
     if (prefetchPageIndex !== pageIndex && !pages[prefetchPageIndex]) {
-      fetchPageFromCatsApi(prefetchPageIndex, selectedBreedID, fetchPage);
+      doFetch(prefetchPageIndex);
     }
   }, [index, pages, selectedBreedID, fetchPage]);
 
@@ -155,6 +175,15 @@ function CatSlideshow({ selectedBreedID }) {
     }
   }, [pages, index, visibleIndex, state.indexReadyMap]);
 
+  useEffect(() => {
+    if (metadata?.["pagination-count"] !== undefined) {
+      dispatch({
+        type: "update-max-index",
+        maxIndex: metadata["pagination-count"] - 1,
+      });
+    }
+  }, [metadata]);
+
   return (
     <div className="CatSlideshow">
       {visibleIndex !== null ? (
@@ -181,6 +210,7 @@ function CatSlideshow({ selectedBreedID }) {
       <CatSlideshowControls
         dispatch={dispatch}
         canScrollLeft={state.index !== 0}
+        canScrollRight={state.index < state.maxIndex}
       />
     </div>
   );
