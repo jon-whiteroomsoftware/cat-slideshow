@@ -11,6 +11,8 @@
 1. I'd like to hear any and all feedback you have, from problems with abstraction, hooks etc. all the way down to the nittiest of nits.
 1. It would also be great to hear your advice on better ways to do things or missing features of Hooks I could be using.
 1. While this obviously isn't production code, I'm trying to treat it as such.
+1. I'm happy to get your feedback in any form that works for you - github code review, email, or verbal feedback.
+1. Thanks for reviewing my code! You rock.
 
 ### Functionality/Features
 
