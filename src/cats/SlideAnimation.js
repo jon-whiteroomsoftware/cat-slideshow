@@ -27,12 +27,6 @@ function SlideAnimation({ child, direction }) {
     setSlideChildren([child]);
   };
 
-  // console.log(
-  //   "%c Render",
-  //   "color: blue",
-  //   slideChildren.map((c) => c.key)
-  // );
-
   return (
     <div className="SlideAnimation">
       {slideChildren.length === 2
