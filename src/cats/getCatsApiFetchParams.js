@@ -7,7 +7,7 @@ const getCatsApiFetchParams = (path, queryParams, slowMillis) => {
   const params = new URLSearchParams(queryParams);
   let url = new URL(`/v${API_VERSION}${path}`, `https://${SERVER}`);
 
-  if (slowMillis) {
+  if (Number.isInteger(slowMillis)) {
     url = `https://deelay.me/${slowMillis}/${url}`;
   }
 

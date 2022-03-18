@@ -31,7 +31,7 @@ function CatApp() {
   });
 
   useEffect(() => {
-    const { url, options } = getCatsApiFetchParams("/breeds", undefined, 1000);
+    const { url, options } = getCatsApiFetchParams("/breeds");
 
     runFetch(url, options)
       .then(async (response) => {
