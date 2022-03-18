@@ -3,7 +3,7 @@ let API_KEY = "DEMO-API-KEY";
 const API_VERSION = "1";
 const SERVER = "api.thecatapi.com";
 
-const getCatsApiFetchParams = (path, queryParams, slowMillis) => {
+const getCatsApiFetchParams = (path, queryParams = {}, slowMillis) => {
   const params = new URLSearchParams(queryParams);
   let url = new URL(`/v${API_VERSION}${path}`, `https://${SERVER}`);
 
