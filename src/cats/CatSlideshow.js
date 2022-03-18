@@ -9,7 +9,7 @@ import "./CatSlideshow.css";
 
 const PAGE_SIZE = 20;
 const PAGE_PREFETCH = 8;
-const MAX_PREFETCH = 2;
+const MAX_PREFETCH = 4;
 
 function fetchPageFromCatsApi(pageIndex, selectedBreedID, fetchPage) {
   const { url, options } = getCatsApiFetchParams("/images/search", {
@@ -59,10 +59,28 @@ function catSlideshowReducer(state, action) {
   //console.log("%ccat slideshow: " + action.type, "color: red", action, state);
 
   function changeIndex(state, increment) {
-    const newIndex = Math.min(
+    let newIndex = Math.min(
       Math.max(0, state.index + increment),
       state.maxIndex
     );
+
+    if (state.indexReadyMap[newIndex] === "error") {
+      // skip over images that failed to preload
+      const imageMapIndexes = Object.keys(state.indexReadyMap);
+      const nextImageIndexes =
+        state.direction === Direction.Next
+          ? imageMapIndexes.slice(newIndex + 1)
+          : imageMapIndexes.slice(0, newIndex).reverse();
+
+      const nextReadyImageIndex = nextImageIndexes.find(
+        (k) => state.indexReadyMap[k] === "ready"
+      );
+
+      if (nextReadyImageIndex !== undefined) {
+        newIndex = Number(nextReadyImageIndex);
+      }
+    }
+
     const isReady = state.indexReadyMap[newIndex] === "ready";
 
     return {
@@ -86,10 +104,13 @@ function catSlideshowReducer(state, action) {
     case "prefetch-status": {
       const newState = {
         ...state,
-        indexReadyMap: { ...state.indexReadyMap, [action.index]: "ready" },
+        indexReadyMap: {
+          ...state.indexReadyMap,
+          [action.index]: action.status,
+        },
       };
 
-      if (action.index === state.index) {
+      if (action.status === "ready" && action.index === state.index) {
         newState.visibleIndex = action.index;
       }
 
@@ -169,7 +190,14 @@ function CatSlideshow({ selectedBreedID }) {
 
           preloadImage(url)
             .then(() => updateImageStatus(i, "ready"))
-            .catch(() => updateImageStatus(i, "error"));
+            .catch(() => {
+              // retry preload failure once
+              setTimeout(() => {
+                preloadImage(url)
+                  .then(() => updateImageStatus(i, "ready"))
+                  .catch(() => updateImageStatus(i, "error"));
+              }, 200);
+            });
         }
       });
     }
