@@ -1,18 +1,17 @@
-import "./Cards.css";
-import "./loadingSpinner.css";
+import styles from "./Cards.module.css";
 
 function LoadingCard({ className }) {
   return (
-    <div className={`LoadingCard ${className || ""}`}>
-      <div className="loadingSpinnerLarge"></div>
+    <div className={`${styles.LoadingCard} ${className || ""}`}>
+      <div className={styles.loadingSpinnerLarge}></div>
     </div>
   );
 }
 
 function MessageCard({ className, children }) {
   return (
-    <div className={`MessageCard ${className}`}>
-      <span className="message">{children}</span>
+    <div className={`${styles.MessageCard} ${className}`}>
+      <span className={styles.message}>{children}</span>
     </div>
   );
 }

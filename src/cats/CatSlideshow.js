@@ -5,7 +5,7 @@ import usePaginatedFetch from "./usePaginatedFetch";
 import CatSlideshowControls from "./CatSlideshowControls.js";
 import { SlideAnimation, Direction } from "./SlideAnimation.js";
 import { LoadingCard } from "./Cards.js";
-import "./CatSlideshow.css";
+import styles from "./CatSlideshow.module.css";
 
 const PAGE_SIZE = 20;
 const PAGE_PREFETCH = 8;
@@ -213,14 +213,14 @@ function CatSlideshow({ selectedBreedID }) {
   }, [metadata]);
 
   return (
-    <div className="CatSlideshow">
+    <div className={styles.CatSlideshow}>
       {visibleIndex !== null ? (
-        <div className="mainContainer">
+        <div className={styles.mainContainer}>
           <>
             <SlideAnimation
               child={
                 <div
-                  className="image"
+                  className={styles.image}
                   key={visibleIndex}
                   style={{
                     backgroundImage: `url(${getImageURL(pages, visibleIndex)})`,
@@ -229,7 +229,9 @@ function CatSlideshow({ selectedBreedID }) {
               }
               direction={direction}
             />
-            {visibleIndex !== index && <LoadingCard className="imageOverlay" />}
+            {visibleIndex !== index && (
+              <LoadingCard className={styles.imageOverlay} />
+            )}
           </>
         </div>
       ) : (

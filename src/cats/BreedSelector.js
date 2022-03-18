@@ -1,4 +1,4 @@
-import "./BreedSelector.css";
+import styles from "./BreedSelector.module.css";
 
 function BreedSelector({ dispatch, breeds, selectedBreedID, status }) {
   function onSelectChange(e) {
@@ -6,12 +6,12 @@ function BreedSelector({ dispatch, breeds, selectedBreedID, status }) {
   }
 
   return (
-    <div className="BreedSelector">
+    <div className={styles.BreedSelector}>
       <form>
         <label>Breed</label>
-        <span className="selectContainer">
+        <span className={styles.selectContainer}>
           <select
-            className={status === "error" ? "isError" : ""}
+            className={status === "error" ? styles.isError : ""}
             disabled={breeds === null || status === "error"}
             onChange={onSelectChange}
             type="select"

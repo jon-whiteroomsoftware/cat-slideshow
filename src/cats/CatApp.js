@@ -5,7 +5,7 @@ import CatSlideshow from "./CatSlideshow.js";
 import CatSlideshowControls from "./CatSlideshowControls.js";
 import BreedSelector from "./BreedSelector.js";
 import { MessageCard, LoadingCard } from "./Cards.js";
-import "./CatApp.css";
+import styles from "./CatApp.module.css";
 
 const BREED_ID_KEY = "CatApp-breed-id";
 
@@ -56,7 +56,7 @@ function CatApp() {
   }, [runFetch]);
 
   return (
-    <div className="CatApp">
+    <div className={styles.CatApp}>
       <BreedSelector
         dispatch={dispatch}
         breeds={state.breeds}

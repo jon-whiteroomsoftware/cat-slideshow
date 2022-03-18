@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import "./SlideAnimation.css";
+import styles from "./SlideAnimation.module.css";
 
 const Direction = {
   Next: 0,
@@ -28,12 +28,12 @@ function SlideAnimation({ child, direction }) {
   };
 
   return (
-    <div className="SlideAnimation">
+    <div className={styles.SlideAnimation}>
       {slideChildren.length === 2
         ? [
             slideChildren[0],
             <div
-              className={`slideContainer ${
+              className={`${styles.slideContainer} ${
                 direction === Direction.Next ? "slideToNext" : "slideToPrevious"
               }`}
               key={slideChildren[1].key}

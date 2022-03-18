@@ -1,4 +1,4 @@
-import "./CatSlideshowControls.css";
+import styles from "./CatSlideshowControls.module.css";
 
 function CatSlideshowControls({
   dispatch,
@@ -7,7 +7,7 @@ function CatSlideshowControls({
   canScrollRight,
 }) {
   return (
-    <div className="CatSlideshowControls">
+    <div className={styles.CatSlideshowControls}>
       <button
         disabled={isDisabled || !canScrollLeft}
         onClick={() => dispatch({ type: "decrement-index" })}
