@@ -18,10 +18,6 @@
   top: 1px;
 }
 
-.BreedSelector .selectContainer {
-  position: relative;
-}
-
 .BreedSelector form select {
   border: 2px solid #ccc;
   font-size: 1.2rem;

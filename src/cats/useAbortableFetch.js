@@ -1,7 +1,7 @@
 import { useRef, useCallback, useEffect } from "react";
 import useAsync from "./useAsync";
 
-function useAbortableFetch(initialStatus) {
+export default function useAbortableFetch(initialStatus) {
   const state = useAsync(initialStatus);
   const { status, data, error, run: asyncRun, abort: asyncAbort } = state;
   const controllerRef = useRef(new AbortController());
@@ -54,5 +54,3 @@ function useAbortableFetch(initialStatus) {
     abort,
   };
 }
-
-export default useAbortableFetch;

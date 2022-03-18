@@ -1,9 +1,18 @@
+import { useCallback } from "react";
 import styles from "./BreedSelector.module.css";
 
-function BreedSelector({ dispatch, breeds, selectedBreedID, status }) {
-  function onSelectChange(e) {
-    dispatch({ type: "select-breed", id: e.target.value });
-  }
+export default function BreedSelector({
+  dispatch,
+  breeds,
+  selectedBreedID,
+  status,
+}) {
+  const onSelectChange = useCallback(
+    (e) => {
+      dispatch({ type: "select-breed", id: e.target.value });
+    },
+    [dispatch]
+  );
 
   return (
     <div className={styles.BreedSelector}>
@@ -11,11 +20,11 @@ function BreedSelector({ dispatch, breeds, selectedBreedID, status }) {
         <label>Breed</label>
         <span className={styles.selectContainer}>
           <select
-            className={status === "error" ? styles.isError : ""}
+            className={status === "error" ? styles.isError : null}
             disabled={breeds === null || status === "error"}
             onChange={onSelectChange}
             type="select"
-            value={selectedBreedID || undefined}
+            value={selectedBreedID}
           >
             {breeds === null
               ? []
@@ -30,5 +39,3 @@ function BreedSelector({ dispatch, breeds, selectedBreedID, status }) {
     </div>
   );
 }
-
-export default BreedSelector;

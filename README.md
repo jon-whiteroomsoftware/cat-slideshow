@@ -30,8 +30,9 @@
 ### What's missing
 
 - ErrorBoundary for API failures
+- Typescript
+- set colors using css variables
 - Tests
-- Typechecks
 
 ### Navigating the code
 

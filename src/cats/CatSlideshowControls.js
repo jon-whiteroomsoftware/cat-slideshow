@@ -1,6 +1,6 @@
 import styles from "./CatSlideshowControls.module.css";
 
-function CatSlideshowControls({
+export default function CatSlideshowControls({
   dispatch,
   isDisabled,
   canScrollLeft,
@@ -23,5 +23,3 @@ function CatSlideshowControls({
     </div>
   );
 }
-
-export default CatSlideshowControls;

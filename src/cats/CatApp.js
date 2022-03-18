@@ -23,7 +23,7 @@ function catAppReducer(state, action) {
   }
 }
 
-function CatApp() {
+export default function CatApp() {
   const { status: loadStatus, runFetch } = useAbortableFetch("loading");
   const [state, dispatch] = useReducer(catAppReducer, {
     breeds: null,
@@ -79,5 +79,3 @@ function CatApp() {
     </div>
   );
 }
-
-export default CatApp;

@@ -43,7 +43,7 @@ function fetchReducer(state, action) {
   }
 }
 
-function usePaginatedFetch(pageSize, initialStatus = "idle") {
+export default function usePaginatedFetch(pageSize, initialStatus = "idle") {
   const [state, dispatch] = useReducer(fetchReducer, {
     metadata: null,
     pages: {},
@@ -90,5 +90,3 @@ function usePaginatedFetch(pageSize, initialStatus = "idle") {
   const status = fetchStatus === "loading" ? "loading" : "idle";
   return { ...state, status, fetchPage, resetPages };
 }
-
-export default usePaginatedFetch;

@@ -121,7 +121,7 @@ function catSlideshowReducer(state, action) {
   }
 }
 
-function CatSlideshow({ selectedBreedID }) {
+export default function CatSlideshow({ selectedBreedID }) {
   const prevSelectedBreedIDRef = useRef(selectedBreedID);
   const prefetchMapRef = useRef(new Map());
   const { pages, metadata, fetchPage, resetPages } = usePaginatedFetch(
@@ -245,5 +245,3 @@ function CatSlideshow({ selectedBreedID }) {
     </div>
   );
 }
-
-export default CatSlideshow;

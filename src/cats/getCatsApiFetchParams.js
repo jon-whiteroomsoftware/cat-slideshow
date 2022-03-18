@@ -3,7 +3,11 @@ let API_KEY = "DEMO-API-KEY";
 const API_VERSION = "1";
 const SERVER = "api.thecatapi.com";
 
-const getCatsApiFetchParams = (path, queryParams = {}, slowMillis) => {
+export default function getCatsApiFetchParams(
+  path,
+  queryParams = {},
+  slowMillis
+) {
   const params = new URLSearchParams(queryParams);
   let url = new URL(`/v${API_VERSION}${path}`, `https://${SERVER}`);
 
@@ -17,6 +21,4 @@ const getCatsApiFetchParams = (path, queryParams = {}, slowMillis) => {
       headers: { "x-api-key": API_KEY },
     },
   };
-};
-
-export default getCatsApiFetchParams;
+}

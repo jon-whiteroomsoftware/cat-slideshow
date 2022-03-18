@@ -16,7 +16,7 @@ function asyncReducer(state, action) {
   }
 }
 
-function useAsync(initialState = "idle") {
+export default function useAsync(initialState = "idle") {
   const [state, dispatch] = useReducer(asyncReducer, {
     status: initialState,
     data: null,
@@ -37,5 +37,3 @@ function useAsync(initialState = "idle") {
 
   return { ...state, run, abort };
 }
-
-export default useAsync;
