@@ -64,7 +64,7 @@ export default function usePaginatedFetch(pageSize, initialStatus = "idle") {
   );
 
   const fetchPage = useCallback(
-    (url, options, index, key, getPageData, getMetadata = null) => {
+    ({ url, options, index, key, getPageData, getMetadata = null }) => {
       dispatch({ type: "fetch-page", url, index, key });
 
       return runFetch(url, options)

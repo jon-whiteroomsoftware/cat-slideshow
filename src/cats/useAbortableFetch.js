@@ -2,15 +2,20 @@ import { useRef, useCallback, useEffect } from "react";
 import useAsync from "./useAsync";
 
 export default function useAbortableFetch(initialStatus) {
-  const state = useAsync(initialStatus);
-  const { status, data, error, run: asyncRun, abort: asyncAbort } = state;
+  const {
+    status,
+    data,
+    error,
+    run: asyncRun,
+    abort: asyncAbort,
+  } = useAsync(initialStatus);
   const controllerRef = useRef(new AbortController());
 
   const abort = useCallback(() => {
     controllerRef.current.abort();
     controllerRef.current = new AbortController();
     asyncAbort();
-  }, [asyncAbort, controllerRef]);
+  }, [asyncAbort]);
 
   const runFetch = useCallback(
     (url, options) => {
@@ -24,7 +29,7 @@ export default function useAbortableFetch(initialStatus) {
           signal: controllerRef.current.signal,
         })
         .then((response) => {
-          if (!response.ok) {
+          if (!response || !response.ok) {
             throw new Error("API call failed");
           }
 
@@ -39,7 +44,7 @@ export default function useAbortableFetch(initialStatus) {
       asyncRun(promise);
       return promise;
     },
-    [controllerRef, asyncRun]
+    [asyncRun]
   );
 
   useEffect(() => {

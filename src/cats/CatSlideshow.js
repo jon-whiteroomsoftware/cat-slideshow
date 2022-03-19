@@ -32,7 +32,14 @@ function fetchPageFromCatsApi(pageIndex, selectedBreedID, fetchPage) {
     );
   };
 
-  fetchPage(url, options, pageIndex, selectedBreedID, getPageData, getMetadata);
+  fetchPage({
+    url,
+    options,
+    index: pageIndex,
+    key: selectedBreedID,
+    getPageData,
+    getMetadata,
+  });
 }
 
 function getPageIndex(index) {
@@ -51,7 +58,7 @@ function initCatSlideshowState() {
     index: 0,
     maxIndex: null,
     visibleIndex: null,
-    readyMap: {},
+    indexReadyMap: {},
   };
 }
 
@@ -144,7 +151,7 @@ export default function CatSlideshow({ selectedBreedID }) {
       dispatch({ type: "change-breed", selectedBreedID });
       prefetchMapRef.current.clear();
     }
-  }, [selectedBreedID, resetPages]);
+  }, [resetPages, selectedBreedID]);
 
   useEffect(() => {
     const pageIndex = getPageIndex(index);
@@ -158,7 +165,7 @@ export default function CatSlideshow({ selectedBreedID }) {
     if (prefetchPageIndex !== pageIndex && !pages[prefetchPageIndex]) {
       doFetch(prefetchPageIndex);
     }
-  }, [index, pages, selectedBreedID, fetchPage]);
+  }, [fetchPage, index, pages, selectedBreedID]);
 
   useEffect(() => {
     const prefetchMap = prefetchMapRef.current;
@@ -201,7 +208,7 @@ export default function CatSlideshow({ selectedBreedID }) {
         }
       });
     }
-  }, [pages, index, visibleIndex, state.indexReadyMap]);
+  }, [index, pages]);
 
   useEffect(() => {
     if (metadata?.["pagination-count"] !== undefined) {
@@ -216,23 +223,21 @@ export default function CatSlideshow({ selectedBreedID }) {
     <div className={styles.catSlideshow}>
       {visibleIndex !== null ? (
         <div className={styles.mainContainer}>
-          <>
-            <SlideAnimation
-              child={
-                <div
-                  className={styles.image}
-                  key={visibleIndex}
-                  style={{
-                    backgroundImage: `url(${getImageURL(pages, visibleIndex)})`,
-                  }}
-                ></div>
-              }
-              direction={direction}
-            />
-            {visibleIndex !== index && (
-              <LoadingCard className={styles.imageOverlay} />
-            )}
-          </>
+          <SlideAnimation
+            child={
+              <div
+                className={styles.image}
+                key={visibleIndex}
+                style={{
+                  backgroundImage: `url(${getImageURL(pages, visibleIndex)})`,
+                }}
+              ></div>
+            }
+            direction={direction}
+          />
+          {visibleIndex !== index && (
+            <LoadingCard className={styles.imageOverlay} />
+          )}
         </div>
       ) : (
         <LoadingCard />

@@ -1,4 +1,6 @@
-let wait = (ms, r) => new Promise((resolved) => setTimeout(resolved, ms, r));
+function wait(ms, r) {
+  return new Promise((resolved) => setTimeout(resolved, ms, r));
+}
 
 function makeEnumObject(...keys) {
   return Object.freeze(

@@ -10,7 +10,7 @@ function asyncReducer(state, action) {
     case "error":
       return { status: "error", data: null, error: action.error };
     case "abort":
-      return { ...state, status: "idle" };
+      return { status: "aborted", data: null, error: null };
     default:
       throw new Error(`Unhandled action type: ${action.type}`);
   }

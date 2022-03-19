@@ -10,27 +10,29 @@ import { MessageCard, LoadingCard } from "./Cards.js";
 import styles from "./CatApp.module.css";
 
 const CATAPP_KEY = "CatSlideshowApp";
+const DEFAULT_CONFIG = { selectedBreedID: "all" };
 
 export default function CatApp({ className }) {
   const { status: loadStatus, runFetch } = useAbortableFetch("loading");
   const [breeds, setBreeds] = useState(null);
-  const [config, setAppConfig] = useLocalStateStorage(CATAPP_KEY, {
-    selectedBreedID: "all",
-  });
+  const [config, setAppConfig] = useLocalStateStorage(
+    CATAPP_KEY,
+    DEFAULT_CONFIG
+  );
 
   useEffect(() => {
     const { url, options } = getCatsApiFetchParams("/breeds");
 
     runFetch(url, options)
       .then(async (response) => {
-        if (!response || !response.ok) {
-          throw new Error("API call failed");
-        }
-
         const json = await response.json();
         let breeds = [{ id: "all", name: "All Breeds" }].concat(
-          json.filter((b) => ({ id: b.id, name: b.name }))
+          json.map((b) => ({ id: b.id, name: b.name }))
         );
+
+        if (breeds.find((b) => b.id === config.selectedBreedID) === undefined) {
+          setAppConfig(DEFAULT_CONFIG);
+        }
 
         setBreeds(breeds);
       })

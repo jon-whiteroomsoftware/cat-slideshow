@@ -28,9 +28,7 @@ export default function BreedSelector({
             disabled={breeds === null || status === "error"}
             onChange={onSelectChange}
             type="select"
-            value={
-              Number.isInteger(selectedBreedID) ? selectedBreedID : undefined
-            }
+            value={selectedBreedID || undefined}
           >
             {breeds === null
               ? []
