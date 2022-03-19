@@ -1,4 +1,4 @@
-.BreedSelector {
+.breedSelector {
   border-bottom: 2px solid #ccc;
   font: 21px Arial;
   display: flex;
@@ -7,23 +7,21 @@
   justify-content: center;
 }
 
-.BreedSelector form {
+.form {
   position: relative;
 }
 
-.BreedSelector form label {
+.label {
   color: #999;
   margin-right: 20px;
-  position: relative;
-  top: 1px;
 }
 
-.BreedSelector form select {
+.select {
   border: 2px solid #ccc;
-  font-size: 1.2rem;
+  font-size: 21px;
   width: 200px;
 }
 
-.BreedSelector form select.isError {
+.isError {
   background-color: #ccc;
 }

@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import clsx from "clsx";
 import styles from "./BreedSelector.module.css";
 
 export default function BreedSelector({
@@ -15,12 +16,15 @@ export default function BreedSelector({
   );
 
   return (
-    <div className={styles.BreedSelector}>
-      <form>
-        <label>Breed</label>
-        <span className={styles.selectContainer}>
+    <div className={styles.breedSelector}>
+      <form className={styles.form}>
+        <label className={styles.label}>Breed</label>
+        <span>
           <select
-            className={status === "error" ? styles.isError : null}
+            className={clsx({
+              [styles.select]: true,
+              [styles.error]: status === "error",
+            })}
             disabled={breeds === null || status === "error"}
             onChange={onSelectChange}
             type="select"

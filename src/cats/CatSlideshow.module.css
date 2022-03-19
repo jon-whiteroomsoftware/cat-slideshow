@@ -1,25 +1,21 @@
-.CatSlideshow {
+.catSlideshow {
   height: 360px;
 }
 
-.CatSlideshow .mainContainer {
+.mainContainer {
   height: 300px;
   position: relative;
 }
 
-.CatSlideshow .image {
+.image {
   background-size: cover;
   height: 300px;
   width: 500px;
 }
 
-.CatSlideshow .mainContainer .imageOverlay {
+.imageOverlay {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-}
-
-.CatSlideshow .image.nextLoading {
-  opacity: 0.5;
 }

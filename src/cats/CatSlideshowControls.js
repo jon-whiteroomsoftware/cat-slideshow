@@ -7,14 +7,16 @@ export default function CatSlideshowControls({
   canScrollRight,
 }) {
   return (
-    <div className={styles.CatSlideshowControls}>
+    <div className={styles.catSlideshowControls}>
       <button
+        className={styles.button}
         disabled={isDisabled || !canScrollLeft}
         onClick={() => dispatch({ type: "decrement-index" })}
       >
         &lt;
       </button>
       <button
+        className={styles.button}
         disabled={isDisabled || !canScrollRight}
         onClick={() => dispatch({ type: "increment-index" })}
       >

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import clsx from "clsx";
 import styles from "./SlideAnimation.module.css";
 
 const Direction = {
@@ -28,14 +29,17 @@ function SlideAnimation({ child, direction }) {
   };
 
   return (
-    <div className={styles.SlideAnimation}>
+    <div className={styles.slideAnimation}>
       {slideChildren.length === 2
         ? [
             slideChildren[0],
             <div
-              className={`${styles.slideContainer} ${
-                direction === Direction.Next ? "slideToNext" : "slideToPrevious"
-              }`}
+              className={clsx([
+                styles.slideContainer,
+                direction === Direction.Next
+                  ? styles.slideToNext
+                  : styles.slideToPrevious,
+              ])}
               key={slideChildren[1].key}
               onAnimationEnd={onAnimationEnd}
             >

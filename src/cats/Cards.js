@@ -1,29 +1,38 @@
+import clsx from "clsx";
 import styles from "./Cards.module.css";
 
 function BaseCard({ className, children }) {
-  return (
-    <div className={`${styles.BaseCard} ${className || ""}`}>{children}</div>
-  );
+  return <div className={clsx([styles.baseCard, className])}>{children}</div>;
 }
 
 function LoadingSpinner() {
-  return <div className={styles.LoadingSpinner}></div>;
+  return <div className={styles.loadingSpinner}></div>;
 }
 
 function LoadingCard({ className }) {
   return (
-    <BaseCard className={`${styles.LoadingCard} ${className || ""}`}>
+    <BaseCard className={clsx([styles.loadingCard, className])}>
       <LoadingSpinner />
     </BaseCard>
   );
 }
 
-function MessageCard({ className, children }) {
+function MessageCard({ className, messageClassName, children }) {
   return (
-    <BaseCard className={`${styles.MessageCard} ${className || ""}`}>
-      <span className={styles.message}>{children}</span>
+    <BaseCard className={clsx([styles.messageCard, className])}>
+      <span className={clsx([styles.message, messageClassName])}>
+        {children}
+      </span>
     </BaseCard>
   );
 }
 
-export { LoadingCard, MessageCard };
+function ErrorCard({ className, children }) {
+  return (
+    <MessageCard className={className} messageClassName={styles.errorMessage}>
+      {children}
+    </MessageCard>
+  );
+}
+
+export { LoadingCard, MessageCard, ErrorCard };

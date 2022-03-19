@@ -1,23 +1,23 @@
-.BaseCard {
+.baseCard {
   height: 300px;
   display: flex;
+  font: 19px Arial;
   align-items: center;
   justify-content: center;
 }
 
-.LoadingCard {
+.loadingCard {
   background-color: #ffffff66;
 }
 
-.MessageCard .message {
+.message {
   background-color: #999;
   border-radius: 8px;
   color: white;
-  font-size: 1.3rem;
   padding: 6px 16px;
 }
 
-.MessageCard.error .message {
+.errorMessage {
   background-color: #9e4646;
 }
 
@@ -30,7 +30,7 @@
   }
 }
 
-.LoadingSpinner {
+.loadingSpinner {
   height: 32px;
   width: 32px;
   opacity: 1;
@@ -38,7 +38,7 @@
   transition: opacity linear 0.5s;
 }
 
-.LoadingSpinner::before {
+.loadingSpinner::before {
   animation: 0.5s linear infinite spinner;
   border: solid 3px #eee;
   border-bottom-color: #ccc;

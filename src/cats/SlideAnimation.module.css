@@ -7,8 +7,7 @@
   }
 }
 
-.SlideAnimation {
-  --slideAnimation: animateSlide 0.4s ease-in-out;
+.slideAnimation {
   height: 100%;
   width: 100%;
   position: relative;
@@ -18,7 +17,7 @@
 .slideContainer {
   position: absolute;
   top: 0;
-  animation: var(--slideAnimation);
+  animation: animateSlide 0.4s ease-in-out;
 }
 
 .slideToNext {

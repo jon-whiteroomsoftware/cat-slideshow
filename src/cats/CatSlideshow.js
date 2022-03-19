@@ -213,7 +213,7 @@ export default function CatSlideshow({ selectedBreedID }) {
   }, [metadata]);
 
   return (
-    <div className={styles.CatSlideshow}>
+    <div className={styles.catSlideshow}>
       {visibleIndex !== null ? (
         <div className={styles.mainContainer}>
           <>

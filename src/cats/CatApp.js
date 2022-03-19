@@ -1,4 +1,5 @@
 import { useEffect, useCallback, useState } from "react";
+import clsx from "clsx";
 import useAbortableFetch from "./useAbortableFetch.js";
 import useLocalStateStorage from "./useLocalStateStorage.js";
 import getCatsApiFetchParams from "./getCatsApiFetchParams.js";
@@ -10,7 +11,7 @@ import styles from "./CatApp.module.css";
 
 const CATAPP_KEY = "CatSlideshowApp";
 
-export default function CatApp() {
+export default function CatApp({ className }) {
   const { status: loadStatus, runFetch } = useAbortableFetch("loading");
   const [breeds, setBreeds] = useState(null);
   const [config, setAppConfig] = useLocalStateStorage(CATAPP_KEY, {
@@ -46,7 +47,7 @@ export default function CatApp() {
   );
 
   return (
-    <div className={styles.CatApp}>
+    <div className={clsx([styles.catApp, className])}>
       <BreedSelector
         onSelectBreedID={onSelectBreedID}
         breeds={breeds}
