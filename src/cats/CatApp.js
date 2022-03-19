@@ -1,5 +1,6 @@
-import { useEffect, useReducer } from "react";
+import { useEffect, useCallback, useState } from "react";
 import useAbortableFetch from "./useAbortableFetch.js";
+import useLocalStateStorage from "./useLocalStateStorage.js";
 import getCatsApiFetchParams from "./getCatsApiFetchParams.js";
 import CatSlideshow from "./CatSlideshow.js";
 import CatSlideshowControls from "./CatSlideshowControls.js";
@@ -7,27 +8,13 @@ import BreedSelector from "./BreedSelector.js";
 import { MessageCard, LoadingCard } from "./Cards.js";
 import styles from "./CatApp.module.css";
 
-const BREED_ID_KEY = "CatApp-breed-id";
-
-function catAppReducer(state, action) {
-  //console.log("%ccatapp: " + action.type, "color: green", action);
-  switch (action.type) {
-    case "select-breed": {
-      window.localStorage.setItem(BREED_ID_KEY, action.id);
-      return { ...state, selectedBreedID: action.id };
-    }
-    case "breeds-loaded":
-      return { breeds: action.breeds, selectedBreedID: action.selectedBreedID };
-    default:
-      throw new Error(`Unhandled action type: ${action.type}`);
-  }
-}
+const CATAPP_KEY = "CatSlideshowApp";
 
 export default function CatApp() {
   const { status: loadStatus, runFetch } = useAbortableFetch("loading");
-  const [state, dispatch] = useReducer(catAppReducer, {
-    breeds: null,
-    selectedBreedID: null,
+  const [breeds, setBreeds] = useState(null);
+  const [config, setAppConfig] = useLocalStateStorage(CATAPP_KEY, {
+    selectedBreedID: "all",
   });
 
   useEffect(() => {
@@ -44,26 +31,29 @@ export default function CatApp() {
           json.filter((b) => ({ id: b.id, name: b.name }))
         );
 
-        dispatch({
-          type: "breeds-loaded",
-          breeds,
-          selectedBreedID: window.localStorage.getItem(BREED_ID_KEY) || "all",
-        });
+        setBreeds(breeds);
       })
       .catch((error) => {
         // suppress error
       });
   }, [runFetch]);
 
+  const onSelectBreedID = useCallback(
+    (breedID) => {
+      setAppConfig({ ...config, selectedBreedID: breedID });
+    },
+    [config, setAppConfig]
+  );
+
   return (
     <div className={styles.CatApp}>
       <BreedSelector
-        dispatch={dispatch}
-        breeds={state.breeds}
-        selectedBreedID={state.selectedBreedID}
+        onSelectBreedID={onSelectBreedID}
+        breeds={breeds}
+        selectedBreedID={config.selectedBreedID}
         status={loadStatus}
       />
-      {loadStatus === "loading" || state.selectedBreedID === null ? (
+      {loadStatus === "loading" || config.selectedBreedID === null ? (
         <>
           <LoadingCard />
           <CatSlideshowControls isDisabled={true} />
@@ -74,7 +64,7 @@ export default function CatApp() {
           <CatSlideshowControls isDisabled={true} />
         </>
       ) : (
-        <CatSlideshow selectedBreedID={state.selectedBreedID} />
+        <CatSlideshow selectedBreedID={config.selectedBreedID} />
       )}
     </div>
   );

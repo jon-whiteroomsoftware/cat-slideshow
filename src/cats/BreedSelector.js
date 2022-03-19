@@ -2,16 +2,16 @@ import { useCallback } from "react";
 import styles from "./BreedSelector.module.css";
 
 export default function BreedSelector({
-  dispatch,
+  onSelectBreedID,
   breeds,
   selectedBreedID,
   status,
 }) {
   const onSelectChange = useCallback(
     (e) => {
-      dispatch({ type: "select-breed", id: e.target.value });
+      onSelectBreedID(e.target.value);
     },
-    [dispatch]
+    [onSelectBreedID]
   );
 
   return (
@@ -24,7 +24,9 @@ export default function BreedSelector({
             disabled={breeds === null || status === "error"}
             onChange={onSelectChange}
             type="select"
-            value={selectedBreedID}
+            value={
+              Number.isInteger(selectedBreedID) ? selectedBreedID : undefined
+            }
           >
             {breeds === null
               ? []

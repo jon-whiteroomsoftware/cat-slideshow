@@ -1,5 +1,4 @@
-.MessageCard,
-.LoadingCard {
+.BaseCard {
   height: 300px;
   display: flex;
   align-items: center;
@@ -7,7 +6,7 @@
 }
 
 .LoadingCard {
-  background-color: rgba(255, 255, 255, 0.4);
+  background-color: #ffffff66;
 }
 
 .MessageCard .message {
@@ -31,39 +30,27 @@
   }
 }
 
-.loadingSpinnerExtraSmall,
-.loadingSpinnerLarge {
-  height: 12px;
-  width: 12px;
+.LoadingSpinner {
+  height: 32px;
+  width: 32px;
   opacity: 1;
   position: relative;
   transition: opacity linear 0.5s;
 }
 
-.loadingSpinnerExtraSmall::before,
-.loadingSpinnerLarge::before {
+.LoadingSpinner::before {
   animation: 0.5s linear infinite spinner;
   border: solid 3px #eee;
   border-bottom-color: #ccc;
   border-radius: 50%;
   content: "";
-  height: 12px;
+  height: 32px;
   left: 50%;
   opacity: inherit;
   position: absolute;
   top: 50%;
   transform: translate3d(-50%, -50%, 0);
   transform-origin: center;
-  width: 16px;
+  width: 32px;
   will-change: transform;
-}
-
-.loadingSpinnerLarge {
-  height: 32px;
-  width: 32px;
-}
-
-.loadingSpinnerLarge::before {
-  height: 32px;
-  width: 32px;
 }
