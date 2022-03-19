@@ -27,7 +27,7 @@
 - Animate next and previous photos with simple slide animation
 - Persist selected breed in local storage
 
-### What's missing
+### ToDo - CR feedback + new features
 
 - always render catslideshow controls from catslideshow
 - remove useEffect dependency entirely for selectedBreedID ref in CatSlideshow
