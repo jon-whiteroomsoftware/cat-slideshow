@@ -19,26 +19,19 @@ function fetchPageFromCatsApi(pageIndex, selectedBreedID, fetchPage) {
     page: pageIndex,
   });
 
-  const getPageData = async (response) => {
-    const json = await response.json();
-    return json.map((item) => ({ id: item.id, url: item.url }));
-  };
-
-  const getMetadata = (response) => {
-    return Object.fromEntries(
-      [...response.headers.entries()].filter(
-        (entry) => entry[0] === "pagination-count"
-      )
-    );
-  };
-
   fetchPage({
     url,
     options,
     index: pageIndex,
     key: selectedBreedID,
-    getPageData,
-    getMetadata,
+    getPageData: async (response) => {
+      const json = await response.json();
+      return json.map((item) => ({ id: item.id, url: item.url }));
+    },
+    getMetadata: (response) => {
+      const count = response.headers.get("pagination-count");
+      return count !== null ? { paginationCount: Number(count) } : {};
+    },
   });
 }
 
@@ -132,7 +125,7 @@ export default function CatSlideshow({ selectedBreedID }) {
   const prevSelectedBreedIDRef = useRef(selectedBreedID);
   const prefetchMapRef = useRef(new Map());
   const { pages, metadata, fetchPage, resetPages } = usePaginatedFetch(
-    PAGE_SIZE,
+    selectedBreedID,
     "loading"
   );
 
@@ -211,10 +204,10 @@ export default function CatSlideshow({ selectedBreedID }) {
   }, [index, pages]);
 
   useEffect(() => {
-    if (metadata?.["pagination-count"] !== undefined) {
+    if (metadata?.paginationCount !== undefined) {
       dispatch({
         type: "update-max-index",
-        maxIndex: metadata["pagination-count"] - 1,
+        maxIndex: metadata.paginationCount - 1,
       });
     }
   }, [metadata]);

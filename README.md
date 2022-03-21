@@ -31,7 +31,7 @@
 
 - always render catslideshow controls from catslideshow
 - remove useEffect dependency entirely for selectedBreedID ref in CatSlideshow
-- remove reducers for CatSlideshow and usePaginatedFetch
+- remove reducers for CatSlideshow
 - move image prefetching into custom hook
   - const {clearPrefetchMap} = usePrefetchImages(pages, index);
 - ErrorBoundary + states for API failures
