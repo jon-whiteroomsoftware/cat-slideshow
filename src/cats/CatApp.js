@@ -4,9 +4,8 @@ import useAbortableFetch from "./useAbortableFetch.js";
 import useLocalStateStorage from "./useLocalStateStorage.js";
 import getCatsApiFetchParams from "./getCatsApiFetchParams.js";
 import CatSlideshow from "./CatSlideshow.js";
-import CatSlideshowControls from "./CatSlideshowControls.js";
 import BreedSelector from "./BreedSelector.js";
-import { MessageCard, LoadingCard } from "./Cards.js";
+import { ErrorCard, LoadingCard } from "./Cards.js";
 import styles from "./CatApp.module.css";
 
 const CATAPP_KEY = "CatSlideshowApp";
@@ -39,7 +38,7 @@ export default function CatApp({ className }) {
       .catch((error) => {
         // suppress error
       });
-  }, [runFetch]);
+  }, [config.selectedBreedID, runFetch, setAppConfig]);
 
   const onSelectBreedID = useCallback(
     (breedID) => {
@@ -56,18 +55,10 @@ export default function CatApp({ className }) {
         selectedBreedID={config.selectedBreedID}
         status={loadStatus}
       />
-      {loadStatus === "loading" || config.selectedBreedID === null ? (
-        <>
-          <LoadingCard />
-          <CatSlideshowControls isDisabled={true} />
-        </>
-      ) : loadStatus === "error" ? (
-        <>
-          <MessageCard className="error">an error has occurred</MessageCard>
-          <CatSlideshowControls isDisabled={true} />
-        </>
-      ) : (
-        <CatSlideshow selectedBreedID={config.selectedBreedID} />
+      <CatSlideshow selectedBreedID={config.selectedBreedID} />
+      {loadStatus === "loading" && <LoadingCard className={styles.overlay} />}
+      {loadStatus === "error" && (
+        <ErrorCard className={styles.overlay}>an error has occurred</ErrorCard>
       )}
     </div>
   );

@@ -1,5 +1,6 @@
 .baseCard {
   height: 300px;
+  width: 500px;
   display: flex;
   font: 19px Arial;
   align-items: center;

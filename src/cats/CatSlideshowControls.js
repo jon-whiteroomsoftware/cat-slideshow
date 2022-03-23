@@ -1,6 +1,8 @@
+import clsx from "clsx";
 import styles from "./CatSlideshowControls.module.css";
 
 export default function CatSlideshowControls({
+  className,
   onPreviousClick,
   onNextClick,
   isDisabled,
@@ -8,7 +10,7 @@ export default function CatSlideshowControls({
   canScrollRight,
 }) {
   return (
-    <div className={styles.catSlideshowControls}>
+    <div className={clsx([styles.catSlideshowControls, className])}>
       <button
         className={styles.button}
         disabled={isDisabled || !canScrollLeft}

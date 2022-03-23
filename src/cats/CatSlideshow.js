@@ -51,7 +51,7 @@ export default function CatSlideshow({ selectedBreedID }) {
   const [visibleIndex, setVisibleIndex] = useState(null);
   const [maxIndex, setMaxIndex] = useState(null);
   const previousBreedID = usePrevious(selectedBreedID);
-  const { pages, metadata, fetchPage, resetPages } = usePaginatedFetch(
+  const { pages, metadata, status, fetchPage, resetPages } = usePaginatedFetch(
     selectedBreedID,
     "loading"
   );
@@ -119,9 +119,13 @@ export default function CatSlideshow({ selectedBreedID }) {
     setIndex((prev) => Math.min(maxIndex, prev + 1));
   }, [maxIndex]);
 
+  console.log({ visibleIndex, selectedBreedID });
+
   return (
     <div className={styles.catSlideshow}>
-      {visibleIndex !== null ? (
+      {selectedBreedID === null ? null : visibleIndex === null ? (
+        <LoadingCard />
+      ) : (
         <div className={styles.mainContainer}>
           <SlideAnimation
             child={
@@ -139,10 +143,10 @@ export default function CatSlideshow({ selectedBreedID }) {
             <LoadingCard className={styles.imageOverlay} />
           )}
         </div>
-      ) : (
-        <LoadingCard />
       )}
       <CatSlideshowControls
+        className={styles.controls}
+        disabled={status !== "loaded"}
         onPreviousClick={onPrevousClick}
         onNextClick={onNextClick}
         canScrollLeft={index !== 0}
