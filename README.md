@@ -31,6 +31,7 @@
 
 - always render catslideshow controls from catslideshow
 - remove useEffect dependency entirely for selectedBreedID ref in CatSlideshow
+- config via context?
 - ErrorBoundary + states for API failures
 - Typescript
 - set colors using css variables
