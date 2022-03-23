@@ -1,15 +1,15 @@
-import { useEffect, useRef, useReducer } from "react";
-import { preloadImage } from "./utils.js";
+import { useEffect, useCallback, useState } from "react";
 import getCatsApiFetchParams from "./getCatsApiFetchParams.js";
-import usePaginatedFetch from "./usePaginatedFetch";
+import usePaginatedFetch from "./usePaginatedFetch.js";
+import usePrevious from "./usePrevious.js";
+import usePrefetchImages from "./usePrefetchImages.js";
 import CatSlideshowControls from "./CatSlideshowControls.js";
 import { SlideAnimation, Direction } from "./SlideAnimation.js";
 import { LoadingCard } from "./Cards.js";
 import styles from "./CatSlideshow.module.css";
 
 const PAGE_SIZE = 20;
-const PAGE_PREFETCH = 8;
-const MAX_PREFETCH = 4;
+const PAGE_PREFETCH_LIMIT = 8;
 
 function fetchPageFromCatsApi(pageIndex, selectedBreedID, fetchPage) {
   const { url, options } = getCatsApiFetchParams("/images/search", {
@@ -45,110 +45,35 @@ function getImageURL(pages, index) {
   return pages?.[pageIndex]?.data?.[offset]?.url;
 }
 
-function initCatSlideshowState() {
-  return {
-    direction: Direction.Next,
-    index: 0,
-    maxIndex: null,
-    visibleIndex: null,
-    indexReadyMap: {},
-  };
-}
-
-function catSlideshowReducer(state, action) {
-  //console.log("%ccat slideshow: " + action.type, "color: red", action, state);
-
-  function changeIndex(state, increment) {
-    let newIndex = Math.min(
-      Math.max(0, state.index + increment),
-      state.maxIndex
-    );
-
-    if (state.indexReadyMap[newIndex] === "error") {
-      // skip over images that failed to preload
-      const imageMapIndexes = Object.keys(state.indexReadyMap);
-      const nextImageIndexes =
-        state.direction === Direction.Next
-          ? imageMapIndexes.slice(newIndex + 1)
-          : imageMapIndexes.slice(0, newIndex).reverse();
-
-      const nextReadyImageIndex = nextImageIndexes.find(
-        (k) => state.indexReadyMap[k] === "ready"
-      );
-
-      if (nextReadyImageIndex !== undefined) {
-        newIndex = Number(nextReadyImageIndex);
-      }
-    }
-
-    const isReady = state.indexReadyMap[newIndex] === "ready";
-
-    return {
-      ...state,
-      direction: increment > 0 ? Direction.Next : Direction.Previous,
-      index: newIndex,
-      visibleIndex: isReady ? newIndex : state.visibleIndex,
-    };
-  }
-
-  switch (action.type) {
-    case "change-breed":
-      return initCatSlideshowState();
-    case "update-max-index":
-      return { ...state, maxIndex: action.maxIndex };
-    case "decrement-index":
-      return changeIndex(state, -1);
-    case "increment-index": {
-      return changeIndex(state, 1);
-    }
-    case "prefetch-status": {
-      const newState = {
-        ...state,
-        indexReadyMap: {
-          ...state.indexReadyMap,
-          [action.index]: action.status,
-        },
-      };
-
-      if (action.status === "ready" && action.index === state.index) {
-        newState.visibleIndex = action.index;
-      }
-
-      return newState;
-    }
-    default:
-      throw new Error(`Unhandled action type: ${action.type}`);
-  }
-}
-
 export default function CatSlideshow({ selectedBreedID }) {
-  const prevSelectedBreedIDRef = useRef(selectedBreedID);
-  const prefetchMapRef = useRef(new Map());
+  const [direction, setDirection] = useState(Direction.Next);
+  const [index, setIndex] = useState(0);
+  const [visibleIndex, setVisibleIndex] = useState(null);
+  const [maxIndex, setMaxIndex] = useState(null);
+  const previousBreedID = usePrevious(selectedBreedID);
   const { pages, metadata, fetchPage, resetPages } = usePaginatedFetch(
     selectedBreedID,
     "loading"
   );
-
-  const [state, dispatch] = useReducer(
-    catSlideshowReducer,
-    undefined,
-    initCatSlideshowState
+  const { imageLoadMap, resetPrefetch } = usePrefetchImages(
+    index,
+    useCallback((i) => getImageURL(pages, i), [pages])
   );
 
-  const { direction, index, visibleIndex } = state;
-
   useEffect(() => {
-    if (selectedBreedID !== prevSelectedBreedIDRef.current) {
-      prevSelectedBreedIDRef.current = selectedBreedID;
+    if (selectedBreedID !== previousBreedID) {
       resetPages(selectedBreedID);
-      dispatch({ type: "change-breed", selectedBreedID });
-      prefetchMapRef.current.clear();
+      resetPrefetch();
+      setIndex(0);
+      setDirection(Direction.Next);
+      setVisibleIndex(null);
+      setMaxIndex(null);
     }
-  }, [resetPages, selectedBreedID]);
+  }, [selectedBreedID, resetPages, resetPrefetch, previousBreedID]);
 
   useEffect(() => {
     const pageIndex = getPageIndex(index);
-    const prefetchPageIndex = getPageIndex(index + PAGE_PREFETCH);
+    const prefetchPageIndex = getPageIndex(index + PAGE_PREFETCH_LIMIT);
     const doFetch = (i) => fetchPageFromCatsApi(i, selectedBreedID, fetchPage);
 
     if (!pages[pageIndex]) {
@@ -158,59 +83,41 @@ export default function CatSlideshow({ selectedBreedID }) {
     if (prefetchPageIndex !== pageIndex && !pages[prefetchPageIndex]) {
       doFetch(prefetchPageIndex);
     }
-  }, [fetchPage, index, pages, selectedBreedID]);
+
+    if (metadata?.paginationCount !== undefined) {
+      setMaxIndex(metadata.paginationCount - 1);
+    }
+  }, [fetchPage, index, metadata, pages, selectedBreedID]);
 
   useEffect(() => {
-    const prefetchMap = prefetchMapRef.current;
-    const waitIndexes = [...prefetchMap.keys()].filter(
-      (k) => prefetchMap.get(k) === "wait"
-    );
-    const prefetchCount = [...prefetchMap.values()].filter(
-      (v) => v === "prefetch"
-    ).length;
+    // skip over images that failed to load
+    if (imageLoadMap[index] === "error") {
+      const indexes = Object.keys(imageLoadMap);
+      const nextIndexes =
+        direction === Direction.Next
+          ? indexes.slice(index + 1)
+          : indexes.slice(0, index).reverse();
+      const readyIndex = nextIndexes.find((i) => imageLoadMap[i] === "ready");
 
-    for (let i = 0; i < MAX_PREFETCH; i++) {
-      const newIndex = index + i + (index === 0 ? 0 : 1);
-      if (!prefetchMap.get(newIndex)) {
-        prefetchMap.set(newIndex, "wait");
+      if (readyIndex !== undefined) {
+        setIndex(Number(readyIndex));
       }
     }
 
-    if (prefetchCount < MAX_PREFETCH) {
-      waitIndexes.slice(0, MAX_PREFETCH - prefetchCount).forEach((i) => {
-        const url = getImageURL(pages, i);
-
-        const updateImageStatus = (i, status) => {
-          prefetchMap.set(i, status);
-          dispatch({ type: "prefetch-status", index: i, status });
-        };
-
-        if (url) {
-          prefetchMap.set(i, "prefetch");
-
-          preloadImage(url)
-            .then(() => updateImageStatus(i, "ready"))
-            .catch(() => {
-              // retry preload failure once
-              setTimeout(() => {
-                preloadImage(url)
-                  .then(() => updateImageStatus(i, "ready"))
-                  .catch(() => updateImageStatus(i, "error"));
-              }, 200);
-            });
-        }
-      });
+    if (imageLoadMap[index] === "ready") {
+      setVisibleIndex(index);
     }
-  }, [index, pages]);
+  }, [index, imageLoadMap, direction]);
 
-  useEffect(() => {
-    if (metadata?.paginationCount !== undefined) {
-      dispatch({
-        type: "update-max-index",
-        maxIndex: metadata.paginationCount - 1,
-      });
-    }
-  }, [metadata]);
+  const onPrevousClick = useCallback(() => {
+    setDirection(Direction.Previous);
+    setIndex((prev) => Math.max(0, prev - 1));
+  }, []);
+
+  const onNextClick = useCallback(() => {
+    setDirection(Direction.Next);
+    setIndex((prev) => Math.min(maxIndex, prev + 1));
+  }, [maxIndex]);
 
   return (
     <div className={styles.catSlideshow}>
@@ -236,9 +143,10 @@ export default function CatSlideshow({ selectedBreedID }) {
         <LoadingCard />
       )}
       <CatSlideshowControls
-        dispatch={dispatch}
-        canScrollLeft={state.index !== 0}
-        canScrollRight={state.index < state.maxIndex}
+        onPreviousClick={onPrevousClick}
+        onNextClick={onNextClick}
+        canScrollLeft={index !== 0}
+        canScrollRight={index < maxIndex}
       />
     </div>
   );

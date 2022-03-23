@@ -1,7 +1,8 @@
 import styles from "./CatSlideshowControls.module.css";
 
 export default function CatSlideshowControls({
-  dispatch,
+  onPreviousClick,
+  onNextClick,
   isDisabled,
   canScrollLeft,
   canScrollRight,
@@ -11,14 +12,14 @@ export default function CatSlideshowControls({
       <button
         className={styles.button}
         disabled={isDisabled || !canScrollLeft}
-        onClick={() => dispatch({ type: "decrement-index" })}
+        onClick={onPreviousClick}
       >
         &lt;
       </button>
       <button
         className={styles.button}
         disabled={isDisabled || !canScrollRight}
-        onClick={() => dispatch({ type: "increment-index" })}
+        onClick={onNextClick}
       >
         &gt;
       </button>
