@@ -119,8 +119,6 @@ export default function CatSlideshow({ selectedBreedID }) {
     setIndex((prev) => Math.min(maxIndex, prev + 1));
   }, [maxIndex]);
 
-  console.log({ visibleIndex, selectedBreedID });
-
   return (
     <div className={styles.catSlideshow}>
       {selectedBreedID === null ? null : visibleIndex === null ? (
