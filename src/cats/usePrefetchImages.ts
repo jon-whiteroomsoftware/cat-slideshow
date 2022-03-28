@@ -1,11 +1,18 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { preloadImage } from "./utils.js";
+import { preloadImage } from "./utils";
 
 const MAX_PREFETCH = 4;
 
-export default function usePrefetchImages(index, getURLForIndex) {
-  const prefetchMapRef = useRef(new Map());
-  const [imageLoadMap, setImageLoadMap] = useState({});
+type LoadStatus = "ready" | "error";
+type PrefetchStatus = LoadStatus | "wait" | "prefetch";
+type LoadMapType = Record<string, LoadStatus>;
+
+export default function usePrefetchImages(
+  index: number,
+  getURLForIndex: (index: number) => string | undefined
+) {
+  const prefetchMapRef = useRef<Map<number, PrefetchStatus>>(new Map());
+  const [imageLoadMap, setImageLoadMap] = useState<LoadMapType>({});
 
   const resetPrefetch = useCallback(() => {
     prefetchMapRef.current = new Map();
@@ -32,9 +39,9 @@ export default function usePrefetchImages(index, getURLForIndex) {
       waitIndexes.slice(0, MAX_PREFETCH - prefetchCount).forEach((i) => {
         const url = getURLForIndex(i);
 
-        const updateLoadStatus = (i, status) => {
-          prefetchMap.set(i, status);
-          setImageLoadMap((prevMap) => ({ ...prevMap, [i]: status }));
+        const updateLoadStatus = (ind: number, status: PrefetchStatus) => {
+          prefetchMap.set(ind, status);
+          setImageLoadMap((prevMap) => ({ ...prevMap, [ind]: status }));
         };
 
         if (url) {
@@ -48,5 +55,5 @@ export default function usePrefetchImages(index, getURLForIndex) {
     }
   }, [getURLForIndex, index]);
 
-  return { imageLoadMap, resetPrefetch };
+  return { imageLoadMap, resetPrefetch } as const;
 }

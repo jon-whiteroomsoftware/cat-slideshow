@@ -1,16 +1,29 @@
 import { useCallback, useMemo } from "react";
 import clsx from "clsx";
+import { Status } from "./useAsync";
 import styles from "./BreedSelector.module.css";
+
+type BreedType = {
+  id: string;
+  name: string;
+};
+
+type BreedSelectorPropsType = {
+  onSelectBreedID: (id: string) => void;
+  breeds: Array<BreedType> | null;
+  selectedBreedID: string;
+  status: Status;
+};
 
 export default function BreedSelector({
   onSelectBreedID,
   breeds,
   selectedBreedID,
   status,
-}) {
+}: BreedSelectorPropsType) {
   const isError = status === "error";
   const onSelectChange = useCallback(
-    (e) => {
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
       onSelectBreedID(e.target.value);
     },
     [onSelectBreedID]
@@ -33,16 +46,14 @@ export default function BreedSelector({
         <span>
           {breeds === null || isError ? (
             <select
-              className={clsx([styles.select, isError && styles.error])}
+              className={clsx([styles.select, isError && styles.isError])}
               disabled={true}
-              type="select"
               value={undefined}
             />
           ) : (
             <select
               className={styles.select}
               onChange={onSelectChange}
-              type="select"
               value={selectedBreedID || undefined}
             >
               {selectOptions}

@@ -2,16 +2,21 @@ import { useEffect, useState } from "react";
 import clsx from "clsx";
 import styles from "./SlideAnimation.module.css";
 
-const Direction = {
-  Next: 0,
-  Previous: 1,
+enum Direction {
+  Previous,
+  Next,
+}
+
+type SlideAnimationPropsType = {
+  child: JSX.Element;
+  direction: Direction;
 };
 
-function SlideAnimation({ child, direction }) {
-  const [slideChildren, setSlideChildren] = useState([]);
+function SlideAnimation({ child, direction }: SlideAnimationPropsType) {
+  const [slideChildren, setSlideChildren] = useState<Array<JSX.Element>>([]);
 
   useEffect(() => {
-    setSlideChildren((prevChildren) => {
+    setSlideChildren((prevChildren: Array<JSX.Element>) => {
       const prevChild = prevChildren.slice(
         ...(direction === Direction.Next ? [-1] : [0, 1])
       );

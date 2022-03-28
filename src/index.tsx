@@ -1,13 +1,17 @@
-import React from "react";
+import React, { ReactNode } from "react";
 import ReactDOM from "react-dom";
 import "./index.css";
 import CatApp from "./cats/CatApp";
 
+type UnmounterPropsType = {
+  children: ReactNode;
+};
+
 // test app mounting/unmounting behavior
-function Unmounter({ children }) {
+function Unmounter({ children }: UnmounterPropsType) {
   const [isMounted, setIsMounted] = React.useState(true);
 
-  function onChange(e) {
+  function onChange(e: React.FormEvent) {
     setIsMounted(!isMounted);
   }
 

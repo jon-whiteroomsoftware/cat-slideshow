@@ -1,14 +1,14 @@
-function wait(ms, r) {
+function wait(ms: number, r: () => any) {
   return new Promise((resolved) => setTimeout(resolved, ms, r));
 }
 
-function makeEnumObject(...keys) {
+function makeEnumObject(...keys: Array<string>) {
   return Object.freeze(
     keys.reduce((obj, str) => ({ ...obj, [str]: Symbol(str) }), {})
   );
 }
 
-function preloadImage(url) {
+function preloadImage(url: string) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = function () {

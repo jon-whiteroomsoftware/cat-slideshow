@@ -1,7 +1,28 @@
+import { ReactNode } from "react";
 import clsx from "clsx";
 import styles from "./Cards.module.css";
 
-function BaseCard({ className, children }) {
+type BaseCardProps = {
+  className?: string;
+  children: ReactNode;
+};
+
+type LoadingCardProps = {
+  className?: string;
+};
+
+type MessageCardProps = {
+  className?: string;
+  messageClassName: string;
+  children: ReactNode;
+};
+
+type ErrorCardProps = {
+  className?: string;
+  children: ReactNode;
+};
+
+function BaseCard({ className, children }: BaseCardProps) {
   return <div className={clsx([styles.baseCard, className])}>{children}</div>;
 }
 
@@ -9,7 +30,7 @@ function LoadingSpinner() {
   return <div className={styles.loadingSpinner}></div>;
 }
 
-function LoadingCard({ className }) {
+function LoadingCard({ className }: LoadingCardProps) {
   return (
     <BaseCard className={clsx([styles.loadingCard, className])}>
       <LoadingSpinner />
@@ -17,9 +38,13 @@ function LoadingCard({ className }) {
   );
 }
 
-function MessageCard({ className, messageClassName, children }) {
+function MessageCard({
+  className,
+  messageClassName,
+  children,
+}: MessageCardProps) {
   return (
-    <BaseCard className={clsx([styles.messageCard, className])}>
+    <BaseCard className={className}>
       <span className={clsx([styles.message, messageClassName])}>
         {children}
       </span>
@@ -27,7 +52,7 @@ function MessageCard({ className, messageClassName, children }) {
   );
 }
 
-function ErrorCard({ className, children }) {
+function ErrorCard({ className, children }: ErrorCardProps) {
   return (
     <MessageCard className={className} messageClassName={styles.errorMessage}>
       {children}

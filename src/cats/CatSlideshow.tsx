@@ -1,22 +1,42 @@
 import { useEffect, useCallback, useState } from "react";
-import getCatsApiFetchParams from "./getCatsApiFetchParams.js";
-import usePaginatedFetch from "./usePaginatedFetch.js";
-import usePrevious from "./usePrevious.js";
-import usePrefetchImages from "./usePrefetchImages.js";
-import CatSlideshowControls from "./CatSlideshowControls.js";
-import { SlideAnimation, Direction } from "./SlideAnimation.js";
-import { LoadingCard } from "./Cards.js";
+import getCatsApiFetchParams from "./getCatsApiFetchParams";
+import usePaginatedFetch, {
+  FetchPageCallbackType,
+  PageType,
+} from "./usePaginatedFetch";
+import usePrevious from "./usePrevious";
+import usePrefetchImages from "./usePrefetchImages";
+import CatSlideshowControls from "./CatSlideshowControls";
+import { SlideAnimation, Direction } from "./SlideAnimation";
+import { LoadingCard } from "./Cards";
 import styles from "./CatSlideshow.module.css";
+
+type CatSlideshowPropsType = {
+  selectedBreedID: string;
+};
+
+type CatAPISearchResponseItemType = {
+  id: string;
+  url: string;
+};
+
+type CatAPISearchResponseType = Array<CatAPISearchResponseItemType>;
+type SlideshowPageType = Array<{ id: string; url: string }>;
+type SlideshowPagesType = Record<number, PageType<SlideshowPageType, string>>;
 
 const PAGE_SIZE = 20;
 const PAGE_PREFETCH_LIMIT = 8;
 
-function fetchPageFromCatsApi(pageIndex, selectedBreedID, fetchPage) {
+function fetchPageFromCatsApi(
+  pageIndex: number,
+  selectedBreedID: string,
+  fetchPage: FetchPageCallbackType<SlideshowPageType>
+) {
   const { url, options } = getCatsApiFetchParams("/images/search", {
     breed_id: selectedBreedID === "all" ? "" : selectedBreedID,
-    limit: PAGE_SIZE,
+    limit: String(PAGE_SIZE),
     order: "ASC",
-    page: pageIndex,
+    page: String(pageIndex),
   });
 
   fetchPage({
@@ -24,37 +44,39 @@ function fetchPageFromCatsApi(pageIndex, selectedBreedID, fetchPage) {
     options,
     index: pageIndex,
     key: selectedBreedID,
-    getPageData: async (response) => {
-      const json = await response.json();
+    getPageData: async (response): Promise<SlideshowPageType> => {
+      const json: CatAPISearchResponseType = await response.json();
       return json.map((item) => ({ id: item.id, url: item.url }));
     },
-    getMetadata: (response) => {
+    getMetadata: (response): Record<string, string> => {
       const count = response.headers.get("pagination-count");
-      return count !== null ? { paginationCount: Number(count) } : {};
+      return count !== null ? { paginationCount: count } : {};
     },
   });
 }
 
-function getPageIndex(index) {
+function getPageIndex(index: number) {
   return Math.floor(index / PAGE_SIZE);
 }
 
-function getImageURL(pages, index) {
+function getImageURL(pages: SlideshowPagesType, index: number) {
   const pageIndex = getPageIndex(index);
   const offset = index % PAGE_SIZE;
   return pages?.[pageIndex]?.data?.[offset]?.url;
 }
 
-export default function CatSlideshow({ selectedBreedID }) {
+export default function CatSlideshow({
+  selectedBreedID,
+}: CatSlideshowPropsType) {
   const [direction, setDirection] = useState(Direction.Next);
-  const [index, setIndex] = useState(0);
-  const [visibleIndex, setVisibleIndex] = useState(null);
-  const [maxIndex, setMaxIndex] = useState(null);
-  const previousBreedID = usePrevious(selectedBreedID);
-  const { pages, metadata, status, fetchPage, resetPages } = usePaginatedFetch(
-    selectedBreedID,
-    "loading"
-  );
+  const [index, setIndex] = useState<number>(0);
+  const [visibleIndex, setVisibleIndex] = useState<number | null>(null);
+  const [maxIndex, setMaxIndex] = useState<number | null>(null);
+  const previousBreedID = usePrevious<string>(selectedBreedID);
+  const { pages, metadata, status, fetchPage, resetPages } = usePaginatedFetch<
+    SlideshowPageType,
+    string
+  >(selectedBreedID, "loading");
   const { imageLoadMap, resetPrefetch } = usePrefetchImages(
     index,
     useCallback((i) => getImageURL(pages, i), [pages])
@@ -74,7 +96,8 @@ export default function CatSlideshow({ selectedBreedID }) {
   useEffect(() => {
     const pageIndex = getPageIndex(index);
     const prefetchPageIndex = getPageIndex(index + PAGE_PREFETCH_LIMIT);
-    const doFetch = (i) => fetchPageFromCatsApi(i, selectedBreedID, fetchPage);
+    const doFetch = (i: number) =>
+      fetchPageFromCatsApi(i, selectedBreedID, fetchPage);
 
     if (!pages[pageIndex]) {
       doFetch(pageIndex);
@@ -85,7 +108,7 @@ export default function CatSlideshow({ selectedBreedID }) {
     }
 
     if (metadata?.paginationCount !== undefined) {
-      setMaxIndex(metadata.paginationCount - 1);
+      setMaxIndex(Number(metadata.paginationCount) - 1);
     }
   }, [fetchPage, index, metadata, pages, selectedBreedID]);
 
@@ -116,7 +139,7 @@ export default function CatSlideshow({ selectedBreedID }) {
 
   const onNextClick = useCallback(() => {
     setDirection(Direction.Next);
-    setIndex((prev) => Math.min(maxIndex, prev + 1));
+    setIndex((prev) => Math.min(maxIndex || 0, prev + 1));
   }, [maxIndex]);
 
   return (
@@ -144,11 +167,11 @@ export default function CatSlideshow({ selectedBreedID }) {
       )}
       <CatSlideshowControls
         className={styles.controls}
-        disabled={status !== "loaded"}
+        isDisabled={status !== "loaded"}
         onPreviousClick={onPrevousClick}
         onNextClick={onNextClick}
         canScrollLeft={index !== 0}
-        canScrollRight={index < maxIndex}
+        canScrollRight={index < (maxIndex || 0)}
       />
     </div>
   );
