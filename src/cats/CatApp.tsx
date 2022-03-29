@@ -13,14 +13,13 @@ type CatAppPropsType = {
 };
 
 type BreedsAPIResponseType = Array<{ id: string; name: string }>;
-type BreedsType = BreedsAPIResponseType | null;
 
 const CATAPP_KEY = "CatSlideshowApp";
 const DEFAULT_CONFIG = { selectedBreedID: "all" };
 
 export default function CatApp({ className }: CatAppPropsType) {
   const { status: loadStatus, runFetch } = useAbortableFetch("loading");
-  const [breeds, setBreeds] = useState<BreedsType>(null);
+  const [breeds, setBreeds] = useState<BreedsAPIResponseType | null>(null);
   const [config, setAppConfig] = useLocalStateStorage(
     CATAPP_KEY,
     DEFAULT_CONFIG
@@ -36,7 +35,7 @@ export default function CatApp({ className }: CatAppPropsType) {
             json.map((b) => ({ id: b.id, name: b.name }))
           );
 
-          if (breeds.find((b) => b.id === config.selectedBreedID)) {
+          if (!breeds.find((b) => b.id === config.selectedBreedID)) {
             setAppConfig(DEFAULT_CONFIG);
           }
           setBreeds(breeds);
@@ -47,8 +46,8 @@ export default function CatApp({ className }: CatAppPropsType) {
       });
   }, [config.selectedBreedID, runFetch, setAppConfig]);
 
-  const onSelectBreedID = useCallback<(breedID: string) => void>(
-    (breedID) => {
+  const onSelectBreedID = useCallback(
+    (breedID: string) => {
       setAppConfig({ ...config, selectedBreedID: breedID });
     },
     [config, setAppConfig]

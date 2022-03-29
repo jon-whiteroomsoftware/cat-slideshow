@@ -1,7 +1,6 @@
 import { useReducer, useCallback, Reducer } from "react";
 
 export type Status = "idle" | "loading" | "loaded" | "error" | "aborted";
-type RunCallbackType<D> = (promise: Promise<D | void>) => void;
 
 type LoadingAction = {
   type: "loading";
@@ -58,7 +57,7 @@ export default function useAsync<D, E>(initialState: Status = "idle") {
     error: null,
   });
 
-  const run = useCallback<RunCallbackType<D>>((promise) => {
+  const run = useCallback((promise: Promise<D | void>) => {
     dispatch({ type: "loading" });
 
     promise
@@ -70,7 +69,7 @@ export default function useAsync<D, E>(initialState: Status = "idle") {
       .catch((error: E) => dispatch({ type: "error", error }));
   }, []);
 
-  const abort = useCallback<() => void>(() => {
+  const abort = useCallback(() => {
     dispatch({ type: "abort" });
   }, []);
 

@@ -29,9 +29,7 @@
 
 ### ToDo - CR feedback + new features
 
-- Typescript
-- module.css vscode warnings
-- usePrefetchImages - imageLoadMap to Map
+- usePrefetchImages - imageLoadMap to Map?
 - config via context?
 - ErrorBoundary + states for API failures
 - set colors using css variables

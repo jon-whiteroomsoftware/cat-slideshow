@@ -68,7 +68,7 @@ function getImageURL(pages: SlideshowPagesType, index: number) {
 export default function CatSlideshow({
   selectedBreedID,
 }: CatSlideshowPropsType) {
-  const [direction, setDirection] = useState(Direction.Next);
+  const [direction, setDirection] = useState<Direction>("next");
   const [index, setIndex] = useState<number>(0);
   const [visibleIndex, setVisibleIndex] = useState<number | null>(null);
   const [maxIndex, setMaxIndex] = useState<number | null>(null);
@@ -87,7 +87,7 @@ export default function CatSlideshow({
       resetPages(selectedBreedID);
       resetPrefetch();
       setIndex(0);
-      setDirection(Direction.Next);
+      setDirection("next");
       setVisibleIndex(null);
       setMaxIndex(null);
     }
@@ -117,7 +117,7 @@ export default function CatSlideshow({
     if (imageLoadMap[index] === "error") {
       const indexes = Object.keys(imageLoadMap);
       const nextIndexes =
-        direction === Direction.Next
+        direction === "next"
           ? indexes.slice(index + 1)
           : indexes.slice(0, index).reverse();
       const readyIndex = nextIndexes.find((i) => imageLoadMap[i] === "ready");
@@ -133,12 +133,12 @@ export default function CatSlideshow({
   }, [index, imageLoadMap, direction]);
 
   const onPrevousClick = useCallback(() => {
-    setDirection(Direction.Previous);
+    setDirection("previous");
     setIndex((prev) => Math.max(0, prev - 1));
   }, []);
 
   const onNextClick = useCallback(() => {
-    setDirection(Direction.Next);
+    setDirection("next");
     setIndex((prev) => Math.min(maxIndex || 0, prev + 1));
   }, [maxIndex]);
 

@@ -68,15 +68,15 @@ export default function usePaginatedFetch<T, E>(
     [abortFetch]
   );
 
-  const fetchPage = useCallback<FetchPageCallbackType<T>>(
+  const fetchPage = useCallback(
     async ({
       url,
       options,
       index,
       key: fetchKey,
       getPageData,
-      getMetadata = null,
-    }) => {
+      getMetadata,
+    }: FetchPagePropsType<T>) => {
       function updatePages(update: PageType<T, E>) {
         setPages((prevPages) => ({ ...prevPages, [index]: update }));
       }
@@ -89,7 +89,7 @@ export default function usePaginatedFetch<T, E>(
             const pageData = await getPageData(response);
             updatePages({ status: "loaded", data: pageData });
 
-            if (getMetadata) {
+            if (getMetadata !== undefined) {
               setMetadata(getMetadata(response));
             }
           }
