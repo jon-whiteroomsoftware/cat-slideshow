@@ -33,7 +33,7 @@ type FetchPagePropsType<T> = {
   index: number;
   key: string;
   getPageData: (response: Response) => Promise<T>;
-  getMetadata: (response: Response) => MetadataType;
+  getMetadata?: (response: Response) => MetadataType;
 };
 
 export type FetchPageCallbackType<T> = ({
