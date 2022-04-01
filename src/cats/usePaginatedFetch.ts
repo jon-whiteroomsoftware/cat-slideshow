@@ -1,30 +1,30 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import useAbortableFetch from "./useAbortableFetch";
 import { Status } from "./useAsync";
 
-type BasePageType<T> = {
+type BasePageState<T> = {
   data: T | [];
 };
 
-type PageLoadingType<T> = BasePageType<T> & {
+type PageLoadingState<T> = BasePageState<T> & {
   status: "loading";
 };
 
-type PageLoadedType<T> = BasePageType<T> & {
+type PageLoadedState<T> = BasePageState<T> & {
   status: "loaded";
 };
 
-type PageErrorType<T, E> = BasePageType<T> & {
+type PageErrorState<T, E> = BasePageState<T> & {
   status: "error";
   error: E;
 };
 
-export type PageType<T, E> =
-  | PageLoadingType<T>
-  | PageLoadedType<T>
-  | PageErrorType<T, E>;
+export type PageState<T, E> =
+  | PageLoadingState<T>
+  | PageLoadedState<T>
+  | PageErrorState<T, E>;
 
-type PagesType<T, E> = Record<number, PageType<T, E>>;
+type PagesMap<T, E> = Record<number, PageState<T, E>>;
 type MetadataType = Record<string, string> | null;
 
 type FetchPagePropsType<T> = {
@@ -47,10 +47,11 @@ export type FetchPageCallbackType<T> = ({
 
 export default function usePaginatedFetch<T, E>(
   initialKey: string,
-  initialStatus: Status = "idle"
+  initialStatus: Status = "idle",
+  onUpdatePage?: (index: number, page: PageState<T, E>) => void
 ) {
   const [key, setKey] = useState(initialKey);
-  const [pages, setPages] = useState<PagesType<T, E>>({});
+  const [pages, setPages] = useState<PagesMap<T, E>>({});
   const [metadata, setMetadata] = useState<MetadataType>(null);
   const {
     status: fetchStatus,
@@ -77,8 +78,9 @@ export default function usePaginatedFetch<T, E>(
       getPageData,
       getMetadata,
     }: FetchPagePropsType<T>) => {
-      function updatePages(update: PageType<T, E>) {
+      function updatePages(update: PageState<T, E>) {
         setPages((prevPages) => ({ ...prevPages, [index]: update }));
+        onUpdatePage?.(index, update);
       }
 
       updatePages({ status: "loading", data: [] });
@@ -100,7 +102,7 @@ export default function usePaginatedFetch<T, E>(
           }
         });
     },
-    [key, runFetch]
+    [key, onUpdatePage, runFetch]
   );
 
   return {

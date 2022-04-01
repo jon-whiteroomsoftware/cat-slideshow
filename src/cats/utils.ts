@@ -1,4 +1,4 @@
-function wait(ms: number, r: () => any) {
+function wait(ms: number, r: any = null) {
   return new Promise((resolved) => setTimeout(resolved, ms, r));
 }
 

@@ -8,6 +8,8 @@ type CatSlideshowControlsPropsType = {
   isDisabled: boolean;
   canScrollLeft: boolean;
   canScrollRight: boolean;
+  index: number;
+  maxIndex: number;
 };
 
 export default function CatSlideshowControls({
@@ -17,6 +19,8 @@ export default function CatSlideshowControls({
   isDisabled,
   canScrollLeft,
   canScrollRight,
+  index,
+  maxIndex,
 }: CatSlideshowControlsPropsType) {
   return (
     <div className={clsx([styles.catSlideshowControls, className])}>
@@ -27,6 +31,11 @@ export default function CatSlideshowControls({
       >
         &lt;
       </button>
+      {maxIndex > 0 && (
+        <span className={styles.index}>
+          {index + 1} / {maxIndex + 1}
+        </span>
+      )}
       <button
         className={styles.button}
         disabled={isDisabled || !canScrollRight}
