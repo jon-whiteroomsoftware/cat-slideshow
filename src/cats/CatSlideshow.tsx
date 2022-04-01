@@ -5,7 +5,10 @@ import usePaginatedFetch, {
   PageState,
 } from "./usePaginatedFetch";
 import usePrevious from "./usePrevious";
-import usePrefetchImages, { PrefetchStatus } from "./usePrefetchImages";
+import usePrefetchImages, {
+  PrefetchMapType,
+  PrefetchStatus,
+} from "./usePrefetchImages";
 import CatSlideshowControls from "./CatSlideshowControls";
 import { SlideAnimation, Direction } from "./SlideAnimation";
 import { LoadingCard } from "./Cards";
@@ -51,8 +54,8 @@ type MaxIndexAction = {
 
 type UpdateIndexAction = {
   type: "update-index";
-  index: number;
-  status: PrefetchStatus;
+  increment: number;
+  prefetchMap: PrefetchMapType;
 };
 
 type ActionType =
@@ -118,20 +121,40 @@ function catSlideshowReducer(
       return initCatSlideshowState();
     case "max-index":
       return { ...state, maxIndex: action.index };
-    case "update-index": {
-      const { index, status } = action;
-      return {
-        ...state,
-        index,
-        direction: index > state.index ? "next" : "previous",
-        visibleIndex: status === "ready" ? index : state.visibleIndex,
-      };
-    }
     case "image-load": {
       const { index, status } = action;
       return index === state.index && status === "ready"
         ? { ...state, visibleIndex: index }
         : state;
+    }
+    case "update-index": {
+      const { increment, prefetchMap } = action;
+      const direction = increment > 0 ? "next" : "previous";
+      let index =
+        direction === "next"
+          ? Math.min(state.maxIndex || 0, state.index + increment)
+          : Math.max(0, state.index + increment);
+
+      // skip over images that failed to load
+      if (prefetchMap.get(index) === "error") {
+        const indexes = [...prefetchMap.keys()];
+        const nextIndexes =
+          direction === "next"
+            ? indexes.slice(index + 1)
+            : indexes.slice(0, index).reverse();
+        const readyIndex = nextIndexes.find(
+          (i) => prefetchMap.get(i) === "ready"
+        );
+        index = readyIndex !== undefined ? readyIndex : index;
+      }
+
+      return {
+        ...state,
+        direction,
+        index,
+        visibleIndex:
+          prefetchMap.get(index) === "ready" ? index : state.visibleIndex,
+      };
     }
   }
 }
@@ -191,40 +214,6 @@ export default function CatSlideshow({ selectedBreedID }: Props) {
     }
   }, [metadata]);
 
-  const updateIndex = useCallback(
-    (newIndex: number) => {
-      // skip over images that failed to load
-      if (prefetchMap.get(newIndex) === "error") {
-        const indexes = [...prefetchMap.keys()];
-        const nextIndexes =
-          direction === "next"
-            ? indexes.slice(newIndex + 1)
-            : indexes.slice(0, newIndex).reverse();
-        const readyIndex = nextIndexes.find(
-          (i) => prefetchMap.get(i) === "ready"
-        );
-        newIndex = readyIndex !== undefined ? readyIndex : newIndex;
-      }
-
-      dispatch({
-        type: "update-index",
-        index: newIndex,
-        status: prefetchMap.get(newIndex) || "wait",
-      });
-    },
-    [direction, prefetchMap]
-  );
-
-  const onPrevousClick = useCallback(() => {
-    const newIndex = Math.max(0, index - 1);
-    updateIndex(newIndex);
-  }, [index, updateIndex]);
-
-  const onNextClick = useCallback(() => {
-    const newIndex = Math.min(maxIndex || 0, index + 1);
-    updateIndex(newIndex);
-  }, [index, maxIndex, updateIndex]);
-
   return (
     <div className={styles.catSlideshow}>
       {selectedBreedID === null ? null : visibleIndex === null ? (
@@ -251,8 +240,12 @@ export default function CatSlideshow({ selectedBreedID }: Props) {
       <CatSlideshowControls
         className={styles.controls}
         isDisabled={visibleIndex === null}
-        onPreviousClick={onPrevousClick}
-        onNextClick={onNextClick}
+        onPreviousClick={useCallback(() => {
+          dispatch({ type: "update-index", increment: -1, prefetchMap });
+        }, [prefetchMap])}
+        onNextClick={useCallback(() => {
+          dispatch({ type: "update-index", increment: 1, prefetchMap });
+        }, [prefetchMap])}
         canScrollLeft={index !== 0}
         canScrollRight={index < (maxIndex || 0)}
         index={index}
