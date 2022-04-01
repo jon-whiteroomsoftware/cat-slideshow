@@ -19,10 +19,8 @@
 
 ### ToDo - CR feedback + new features
 
-- usePrefetchImages - imageLoadMap to Map?
 - ErrorBoundary + states for API failures
 - set colors using css variables
-- Tests
 
 ### Navigating the code
 
