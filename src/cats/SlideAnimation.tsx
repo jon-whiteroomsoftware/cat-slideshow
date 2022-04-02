@@ -4,12 +4,12 @@ import styles from "./SlideAnimation.module.css";
 
 export type Direction = "previous" | "next";
 
-type SlideAnimationPropsType = {
+type Props = {
   child: JSX.Element;
   direction: Direction;
 };
 
-function SlideAnimation({ child, direction }: SlideAnimationPropsType) {
+function SlideAnimation({ child, direction }: Props) {
   const [slideChildren, setSlideChildren] = useState<Array<JSX.Element>>([]);
 
   useEffect(() => {

@@ -9,6 +9,7 @@
 - Select a breed to show photos of only that breed, or "All Breeds"
 - Use next and previous arrows to scroll through photos
   - Arrows disable at beginning and end of photo data
+  - Skip over images that fail to load
 - Prefetch photo data and images in the background
   - Fetch eagerly from CatAPI in the background to minimize load times
   - Abort in-flight HTTP requests when switching breeds or when component is unmounted

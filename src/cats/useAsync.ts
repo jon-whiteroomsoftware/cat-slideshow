@@ -20,22 +20,22 @@ type AbortAction = {
   type: "abort";
 };
 
-type AsyncAction<D, E> =
+type Action<D, E> =
   | LoadingAction
   | LoadedAction<D>
   | ErrorAction<E>
   | AbortAction;
 
-type AsyncState<D, E> = {
+type State<D, E> = {
   status: Status;
   data: D | null;
   error: E | null;
 };
 
 function asyncReducer<D, E>(
-  state: AsyncState<D, E>,
-  action: AsyncAction<D, E>
-): AsyncState<D, E> {
+  state: State<D, E>,
+  action: Action<D, E>
+): State<D, E> {
   switch (action.type) {
     case "loading":
       return { status: "loading", data: null, error: null };
@@ -49,13 +49,14 @@ function asyncReducer<D, E>(
 }
 
 export default function useAsync<D, E>(initialState: Status = "idle") {
-  const [state, dispatch] = useReducer<
-    Reducer<AsyncState<D, E>, AsyncAction<D, E>>
-  >(asyncReducer, {
-    status: initialState,
-    data: null,
-    error: null,
-  });
+  const [state, dispatch] = useReducer<Reducer<State<D, E>, Action<D, E>>>(
+    asyncReducer,
+    {
+      status: initialState,
+      data: null,
+      error: null,
+    }
+  );
 
   const run = useCallback((promise: Promise<D | void>) => {
     dispatch({ type: "loading" });

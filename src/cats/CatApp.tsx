@@ -8,18 +8,18 @@ import BreedSelector from "./BreedSelector";
 import { ErrorCard, LoadingCard } from "./Cards";
 import styles from "./CatApp.module.css";
 
-type CatAppPropsType = {
+type Props = {
   className?: string;
 };
 
-type BreedsAPIResponseType = Array<{ id: string; name: string }>;
+type BreedsAPIResponse = Array<{ id: string; name: string }>;
 
 const CATAPP_KEY = "CatSlideshowApp";
 const DEFAULT_CONFIG = { selectedBreedID: "all" };
 
-export default function CatApp({ className }: CatAppPropsType) {
+export default function CatApp({ className }: Props) {
   const { status: loadStatus, runFetch } = useAbortableFetch("loading");
-  const [breeds, setBreeds] = useState<BreedsAPIResponseType | null>(null);
+  const [breeds, setBreeds] = useState<BreedsAPIResponse | null>(null);
   const [config, setAppConfig] = useLocalStateStorage(
     CATAPP_KEY,
     DEFAULT_CONFIG
@@ -30,7 +30,7 @@ export default function CatApp({ className }: CatAppPropsType) {
     runFetch(url, options)
       .then(async (response: Response | void) => {
         if (response !== undefined) {
-          const json: BreedsAPIResponseType = await response.json();
+          const json: BreedsAPIResponse = await response.json();
           let breeds = [{ id: "all", name: "All Breeds" }].concat(
             json.map((b) => ({ id: b.id, name: b.name }))
           );

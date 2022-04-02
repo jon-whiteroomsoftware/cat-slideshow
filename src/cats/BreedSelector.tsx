@@ -3,14 +3,14 @@ import clsx from "clsx";
 import { Status } from "./useAsync";
 import styles from "./BreedSelector.module.css";
 
-type BreedType = {
+type Breed = {
   id: string;
   name: string;
 };
 
-type BreedSelectorPropsType = {
+type Props = {
   onSelectBreedID: (id: string) => void;
-  breeds: Array<BreedType> | null;
+  breeds: Array<Breed> | null;
   selectedBreedID: string;
   status: Status;
 };
@@ -20,7 +20,7 @@ export default function BreedSelector({
   breeds,
   selectedBreedID,
   status,
-}: BreedSelectorPropsType) {
+}: Props) {
   const isError = status === "error";
   const onSelectChange = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>) => {

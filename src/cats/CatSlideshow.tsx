@@ -185,7 +185,7 @@ export default function CatSlideshow({ selectedBreedID }: Props) {
   );
 
   useEffect(() => {
-    if (selectedBreedID !== previousBreedID) {
+    if (selectedBreedID !== previousBreedID && previousBreedID !== undefined) {
       resetPages(selectedBreedID);
       resetPrefetch();
       dispatch({ type: "reset" });
@@ -249,7 +249,7 @@ export default function CatSlideshow({ selectedBreedID }: Props) {
         canScrollLeft={index !== 0}
         canScrollRight={index < (maxIndex || 0)}
         index={index}
-        maxIndex={maxIndex || 0}
+        maxIndex={maxIndex}
       />
     </div>
   );

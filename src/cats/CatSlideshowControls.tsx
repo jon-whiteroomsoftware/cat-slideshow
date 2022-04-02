@@ -1,7 +1,7 @@
 import clsx from "clsx";
 import styles from "./CatSlideshowControls.module.css";
 
-type CatSlideshowControlsPropsType = {
+type Props = {
   className: string;
   onPreviousClick: () => void;
   onNextClick: () => void;
@@ -9,7 +9,7 @@ type CatSlideshowControlsPropsType = {
   canScrollLeft: boolean;
   canScrollRight: boolean;
   index: number;
-  maxIndex: number;
+  maxIndex: number | null;
 };
 
 export default function CatSlideshowControls({
@@ -21,7 +21,8 @@ export default function CatSlideshowControls({
   canScrollRight,
   index,
   maxIndex,
-}: CatSlideshowControlsPropsType) {
+}: Props) {
+  console.log("Controls", { index, maxIndex });
   return (
     <div className={clsx([styles.catSlideshowControls, className])}>
       <button
@@ -31,7 +32,7 @@ export default function CatSlideshowControls({
       >
         &lt;
       </button>
-      {maxIndex > 0 && (
+      {maxIndex !== null && (
         <span className={styles.index}>
           {index + 1} / {maxIndex + 1}
         </span>
