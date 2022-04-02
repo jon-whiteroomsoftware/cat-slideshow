@@ -22,7 +22,6 @@ export default function CatSlideshowControls({
   index,
   maxIndex,
 }: Props) {
-  console.log("Controls", { index, maxIndex });
   return (
     <div className={clsx([styles.catSlideshowControls, className])}>
       <button
