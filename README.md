@@ -17,6 +17,7 @@
   - Show a loading spinner when the API or image loading backs up
 - Animate next and previous photos with simple slide animation
 - Persist selected breed in local storage
+- Migrate codebase to Typescript
 
 ### ToDo - CR feedback + new features
 

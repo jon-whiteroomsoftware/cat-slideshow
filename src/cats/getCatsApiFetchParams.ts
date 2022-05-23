@@ -1,5 +1,5 @@
-//let API_KEY = "1a2691b0-d86c-41c1-b968-3b264d96ff7";
-let API_KEY = "DEMO-API-KEY";
+const API_KEY = "d0351835-2fd0-4e3e-b7f9-bbc38df54ac4";
+//const API_KEY = "DEMO-API-KEY";
 const API_VERSION = "1";
 const SERVER = "api.thecatapi.com";
 
