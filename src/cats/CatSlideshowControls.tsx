@@ -22,6 +22,8 @@ export default function CatSlideshowControls({
   index,
   maxIndex,
 }: Props) {
+  console.log({ index, maxIndex, type: typeof index });
+
   return (
     <div className={clsx([styles.catSlideshowControls, className])}>
       <button
@@ -31,11 +33,9 @@ export default function CatSlideshowControls({
       >
         &lt;
       </button>
-      {maxIndex !== null && (
-        <span className={styles.index}>
-          {index + 1} / {maxIndex + 1}
-        </span>
-      )}
+      <span className={styles.index}>
+        {maxIndex === null ? "- / -" : `${index + 1} / ${maxIndex}`}
+      </span>
       <button
         className={styles.button}
         disabled={isDisabled || !canScrollRight}
