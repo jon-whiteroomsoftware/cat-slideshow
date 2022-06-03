@@ -1,0 +1,28 @@
+.catSlideshow {
+  height: 360px;
+  position: relative;
+}
+
+.mainContainer {
+  height: 300px;
+  position: relative;
+}
+
+.image {
+  background-size: cover;
+  height: 300px;
+  width: 500px;
+}
+
+.imageOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+
+.controls {
+  position: absolute;
+  bottom: 0;
+  width: 500px;
+}

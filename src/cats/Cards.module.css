@@ -1,0 +1,57 @@
+.baseCard {
+  height: 300px;
+  width: 500px;
+  display: flex;
+  font: 19px Arial;
+  align-items: center;
+  justify-content: center;
+}
+
+.loadingCard {
+  background-color: #ffffff66;
+}
+
+.message {
+  background-color: #999;
+  border-radius: 8px;
+  color: white;
+  padding: 6px 16px;
+}
+
+.errorMessage {
+  background-color: #9e4646;
+}
+
+@keyframes spinner {
+  0% {
+    transform: translate3d(-50%, -50%, 0) rotate(0deg);
+  }
+  100% {
+    transform: translate3d(-50%, -50%, 0) rotate(360deg);
+  }
+}
+
+.loadingSpinner {
+  height: 32px;
+  width: 32px;
+  opacity: 1;
+  position: relative;
+  transition: opacity linear 0.5s;
+}
+
+.loadingSpinner::before {
+  animation: 0.5s linear infinite spinner;
+  border: solid 3px #eee;
+  border-bottom-color: #ccc;
+  border-radius: 50%;
+  content: "";
+  height: 32px;
+  left: 50%;
+  opacity: inherit;
+  position: absolute;
+  top: 50%;
+  transform: translate3d(-50%, -50%, 0);
+  transform-origin: center;
+  width: 32px;
+  will-change: transform;
+}

@@ -1,70 +1,39 @@
-# Getting Started with Create React App
+# Cat Slideshow
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+### Try the app
 
-## Available Scripts
+[Click here](https://jon-whiteroomsoftware.github.io/cat-slideshow/)
 
-In the project directory, you can run:
+### Functionality/Features
 
-### `npm start`
+- Select a breed to show photos of only that breed, or "All Breeds"
+- Use next and previous arrows to scroll through photos
+  - Arrows disable at beginning and end of photo data
+  - Skip over images that fail to load
+- Prefetch photo data and images in the background
+  - Fetch eagerly from CatAPI in the background to minimize load times
+  - Abort in-flight HTTP requests when switching breeds or when component is unmounted
+  - Don't show photos until they have been preloaded
+  - Show a loading spinner when the API or image loading backs up
+- Animate next and previous photos with simple slide animation
+- Persist selected breed in local storage
+- Migrate codebase to Typescript
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### ToDo - CR feedback + new features
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- ErrorBoundary + states for API failures
+- set colors using css variables
 
-### `npm test`
+### Navigating the code
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
-
-### `npm run build`
-
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- Cat App
+  - BreedSelector
+    - useAbortableFetch
+  - CatSlideshow
+    - MessageCard
+    - LoadingCard
+    - CatSlideshowControls
+    - SlideAnimation
+    - usePaginatedFetch
+      - useAbortableFetch
+        - useAsync

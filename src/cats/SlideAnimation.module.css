@@ -1,0 +1,31 @@
+@keyframes animateSlide {
+  0% {
+    left: var(--slideStartLeft);
+  }
+  100% {
+    left: var(--slideEndLeft);
+  }
+}
+
+.slideAnimation {
+  height: 100%;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.slideContainer {
+  position: absolute;
+  top: 0;
+  animation: animateSlide 0.4s ease-in-out;
+}
+
+.slideToNext {
+  --slideStartLeft: 100%;
+  --slideEndLeft: 0;
+}
+
+.slideToPrevious {
+  --slideStartLeft: 0;
+  --slideEndLeft: 100%;
+}
